@@ -6,26 +6,26 @@
 
 void Engine::add_part(part_t part)
 {
-    std::cout << "Add part: " << std::to_string(part.nb) << ", " << std::to_string(part.x_s) << ", " << std::to_string(part.x_e) << ", " << std::to_string(part.y) << std::endl; 
+    //std::cout << "Add part: " << std::to_string(part.nb) << ", " << std::to_string(part.x_s) << ", " << std::to_string(part.x_e) << ", " << std::to_string(part.y) << std::endl; 
     std::vector<part_t> dummy;
     for(int i = part_lines; i < part.y + 1; i++)
     {
         parts.push_back(dummy);
         part_lines++;
-        std::cout << "adding new part line" << std::endl;
+        //std::cout << "adding new part line" << std::endl;
     }
     parts[part.y].push_back(part);
 }
 
 void Engine::add_symbol(symbol_t symbol)
 {
-    std::cout << "Add symbol: " << std::to_string(symbol.x) << ", " << std::to_string(symbol.y) << std::endl; 
+    //std::cout << "Add symbol: " << std::to_string(symbol.x) << ", " << std::to_string(symbol.y) << std::endl; 
     std::vector<symbol_t> dummy;
     for(int i = symbol_lines; i < symbol.y + 1; i++)
     {
         symbols.push_back(dummy);
         symbol_lines++;
-        std::cout << "adding new symbol line" << std::endl;
+        //std::cout << "adding new symbol line" << std::endl;
     }
     symbols[symbol.y].push_back(symbol);
 }
@@ -33,13 +33,13 @@ void Engine::add_symbol(symbol_t symbol)
 
 void Engine::add_gear(gear_t gear)
 {
-    std::cout << "Add gear: " << std::to_string(gear.x) << ", " << std::to_string(gear.y) << std::endl; 
+    //std::cout << "Add gear: " << std::to_string(gear.x) << ", " << std::to_string(gear.y) << std::endl; 
     std::vector<gear_t> dummy;
     for(int i = gear_lines; i < gear.y + 1; i++)
     {
         gears.push_back(dummy);
         gear_lines++;
-        std::cout << "adding new gear line" << std::endl;
+        //std::cout << "adding new gear line" << std::endl;
     }
     gears[gear.y].push_back(gear);
 }
@@ -63,13 +63,13 @@ int Engine::get_parts()
                 {
                     continue;
                 }
-                std::cout << "part line: " << std::to_string(lp) << ", symbol line: " << std::to_string(ls) << std::endl;
+                //std::cout << "part line: " << std::to_string(lp) << ", symbol line: " << std::to_string(ls) << std::endl;
                 for(auto & s : symbols[ls])
                 {
                     if((p.x_s == s.x + 1) || (p.x_e == s.x - 1) || ((s.x >= p.x_s) && (s.x <= p.x_e)))
                     {
                         part_sum += p.nb;
-                        std::cout << "adding part: " << p.nb << std::endl;
+                        //std::cout << "adding part: " << p.nb << std::endl;
                     }
                 }
             }
@@ -94,7 +94,7 @@ int Engine::get_gears()
                 {
                     continue;
                 }
-                std::cout << "gear line: " << std::to_string(lg) << ", part line: " << std::to_string(lp) << std::endl;
+                //std::cout << "gear line: " << std::to_string(lg) << ", part line: " << std::to_string(lp) << std::endl;
                 for(auto & p : parts[lp])
                 {
                     if((p.x_s == g.x + 1) || (p.x_e == g.x - 1) || ((g.x >= p.x_s) && (g.x <= p.x_e)))
@@ -159,8 +159,7 @@ Elves::Elves(char * file_name)
 
                 // symbol
                 if((line[i] >= 0x21 && line[i] <= 0x2F && line[i] != '.') || (line[i] >= 0x3a && line[i] <= 0x40) || (line[i] >= 0x5b && line[i] <= 0x60) || (line[i] >= 0x7b && line[i] <= 0x7e))
-                {
-                    
+                {                    
                     engine.add_symbol({i, line_nb});
                 }
 
