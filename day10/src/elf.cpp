@@ -604,13 +604,21 @@ std::vector<coordinates_t> Elves::get_next_nest(int x, int y)
                 symbol = pipes[y-1][x];
                 if(symbol == 'J')
                 {
-                    from_tube = explore_tube(x, y-1, RIGHT, UP);
-                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    //check for wall, otherwise there is another possibility to get there without exploring the tube
+                    if((x < pipes[y].length()-1) && locations[y-1][x+1].visited)
+                    {
+                        from_tube = explore_tube(x, y-1, RIGHT, UP);
+                        possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    }
                 }
                 if(symbol == 'L')
                 {
-                    from_tube = explore_tube(x, y-1, LEFT, UP);
-                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    //check for wall, otherwise there is another possibility to get there without exploring the tube
+                    if((x > 0) && locations[y-1][x-1].visited)
+                    {
+                        from_tube = explore_tube(x, y-1, LEFT, UP);
+                        possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    }
                 }
             }
         }
@@ -643,13 +651,21 @@ std::vector<coordinates_t> Elves::get_next_nest(int x, int y)
                 symbol = pipes[y][x-1];
                 if(symbol == 'J')
                 {
-                    from_tube = explore_tube(x-1, y, DOWN, LEFT);
-                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    //check for wall, otherwise there is another possibility to get there without exploring the tube
+                    if((y < pipes.size()-1) && locations[y+1][x-1].visited)
+                    {
+                        from_tube = explore_tube(x-1, y, DOWN, LEFT);
+                        possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    }
                 }
                 if(symbol == '7')
                 {
-                    from_tube = explore_tube(x-1, y, UP, LEFT);
-                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    //check for wall, otherwise there is another possibility to get there without exploring the tube
+                    if((y > 0) && locations[y-1][x-1].visited)
+                    {
+                        from_tube = explore_tube(x-1, y, UP, LEFT);
+                        possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    }
                 }
             }
         }
@@ -668,13 +684,21 @@ std::vector<coordinates_t> Elves::get_next_nest(int x, int y)
                 symbol = pipes[y][x+1];
                 if(symbol == 'L')
                 {
-                    from_tube = explore_tube(x+1, y, DOWN, RIGHT);
-                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    //check for wall, otherwise there is another possibility to get there without exploring the tube
+                    if((y < pipes.size()-1) && locations[y+1][x+1].visited)
+                    {
+                        from_tube = explore_tube(x+1, y, DOWN, RIGHT);
+                        possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    }
                 }
                 if(symbol == 'F')
                 {
-                    from_tube = explore_tube(x+1, y, UP, RIGHT);
-                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    //check for wall, otherwise there is another possibility to get there without exploring the tube
+                    if((y > 0) && locations[y-1][x+1].visited)
+                    {
+                        from_tube = explore_tube(x+1, y, UP, RIGHT);
+                        possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    }
                 }
             }
         }
@@ -707,13 +731,21 @@ std::vector<coordinates_t> Elves::get_next_nest(int x, int y)
                 symbol = pipes[y+1][x];
                 if(symbol == '7')
                 {
-                    from_tube = explore_tube(x, y+1, LEFT, DOWN);
-                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    //check for wall, otherwise there is another possibility to get there without exploring the tube
+                    if((x < pipes[y].length()-1) && locations[y+1][x+1].visited)
+                    {
+                        from_tube = explore_tube(x, y+1, LEFT, DOWN);
+                        possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    }
                 }
                 if(symbol == 'F')
                 {
-                    from_tube = explore_tube(x, y+1, RIGHT, DOWN);
-                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    //check for wall, otherwise there is another possibility to get there without exploring the tube
+                    if((x > 0) && locations[y+1][x-1].visited)
+                    {
+                        from_tube = explore_tube(x, y+1, RIGHT, DOWN);
+                        possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                    }
                 }
             }
         }
