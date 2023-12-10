@@ -266,7 +266,23 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                 //we reached a bend, check where the wall is, otherwise it might be a dead end
                 if(wall == RIGHT)
                 {
-                    //wall on the right, we're moving up -> dead end
+                    //bend
+                    if(x < pipes[y].length()-1)
+                    {
+                        if(pipes[y][x+1] == '-')
+                        {
+                            coord = explore_tube(x+1, y, DOWN, RIGHT);
+                        }
+                        else if(pipes[y][x+1] == '7')
+                        {
+                            coord = explore_tube(x+1, y, RIGHT, DOWN);
+                        }                        
+                        else if(pipes[y][x+1] == 'J')
+                        {
+                            coord = explore_tube(x+1, y, RIGHT, UP);
+                        }
+                    }
+                    
                 }
                 else if((wall == LEFT) && (x > 0) && !locations[y][x-1].visited)
                 {
@@ -292,7 +308,22 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                //we reached a bend, check where the wall is, otherwise it might be a dead end
                 if(wall == LEFT)
                 {
-                    //wall on the left, we're moving up -> dead end
+                    //bend
+                    if(x > 0)
+                    {
+                        if(pipes[y][x-1] == '-')
+                        {
+                            coord = explore_tube(x-1, y, DOWN, LEFT);
+                        }
+                        else if(pipes[y][x-1] == 'F')
+                        {
+                            coord = explore_tube(x-1, y, LEFT, DOWN);
+                        }                        
+                        else if(pipes[y][x-1] == 'L')
+                        {
+                            coord = explore_tube(x-1, y, LEFT, UP);
+                        }
+                    }
                 }
                 else if((wall == RIGHT) && (x < pipes[y].length() - 1) && !locations[y][x+1].visited)
                 {
@@ -346,7 +377,22 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                 //we reached a bend, check where the wall is, otherwise it might be a dead end
                 if(wall == LEFT)
                 {
-                    //wall on the left, we're moving down -> dead end
+                     //bend
+                    if(x < pipes[y].length())
+                    {
+                        if(pipes[y][x+1] == '-')
+                        {
+                            coord = explore_tube(x+1, y, UP, RIGHT);
+                        }
+                        else if(pipes[y][x+1] == 'J')
+                        {
+                            coord = explore_tube(x+1, y, LEFT, UP);
+                        }                        
+                        else if(pipes[y][x+1] == '7')
+                        {
+                            coord = explore_tube(x+1, y, LEFT, DOWN);
+                        }
+                    }
                 }
                 else if((wall == RIGHT) && (x > 0) && !locations[y][x-1].visited)
                 {
@@ -372,7 +418,22 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                //we reached a bend, check where the wall is, otherwise it might be a dead end
                 if(wall == RIGHT)
                 {
-                    //wall on the Right, we're moving down -> dead end
+                    //bend
+                    if(x > 0)
+                    {
+                        if(pipes[y][x-1] == '-')
+                        {
+                            coord = explore_tube(x-1, y, UP, LEFT);
+                        }
+                        else if(pipes[y][x-1] == 'L')
+                        {
+                            coord = explore_tube(x-1, y, RIGHT, UP);
+                        }                        
+                        else if(pipes[y][x-1] == 'F')
+                        {
+                            coord = explore_tube(x-1, y, RIGHT, DOWN);
+                        }
+                    }
                 }
                 else if((wall == LEFT) && (x < pipes[y].length()-1) && !locations[y][x+1].visited)
                 {
@@ -426,7 +487,22 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                 //we reached a bend, check where the wall is, otherwise it might be a dead end
                 if(wall == DOWN)
                 {
-                    //wall down, we're moving left -> dead end
+                    //bend
+                    if(y < pipes.size()-1)
+                    {
+                        if(pipes[y+1][x] == '|')
+                        {
+                            coord = explore_tube(x, y+1, LEFT, DOWN);
+                        }
+                        else if(pipes[y+1][x] == 'L')
+                        {
+                            coord = explore_tube(x, y+1, UP, RIGHT);
+                        }                        
+                        else if(pipes[y+1][x] == 'J')
+                        {
+                            coord = explore_tube(x, y+1, DOWN, LEFT);
+                        }
+                    }
                 }
                 else if((wall == UP) && (y > 0) && !locations[y-1][x].visited)
                 {
@@ -452,7 +528,22 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                 //we reached a bend, check where the wall is, otherwise it might be a dead end
                 if(wall == UP)
                 {
-                    //wall up, we're moving left -> dead end
+                    //bend
+                    if(y > 0)
+                    {
+                        if(pipes[y-1][x] == '|')
+                        {
+                            coord = explore_tube(x, y-1, RIGHT, UP);
+                        }
+                        else if(pipes[y-1][x] == 'F')
+                        {
+                            coord = explore_tube(x, y-1, DOWN, RIGHT);
+                        }                        
+                        else if(pipes[y-1][x] == '7')
+                        {
+                            coord = explore_tube(x, y-1, UP, LEFT);
+                        }
+                    }
                 }
                 else if((wall == DOWN) && (y < pipes.size()-1) && !locations[y+1][x].visited)
                 {
@@ -506,7 +597,22 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                 //we reached a bend, check where the wall is, otherwise it might be a dead end
                 if(wall == DOWN)
                 {
-                    //wall down, we're moving left -> dead end
+                    //bend
+                    if(y < pipes.size()-1)
+                    {
+                        if(pipes[y+1][x] == '|')
+                        {
+                            coord = explore_tube(x, y+1, RIGHT, DOWN);
+                        }
+                        else if(pipes[y+1][x] == 'J')
+                        {
+                            coord = explore_tube(x, y+1, UP, LEFT);
+                        }                        
+                        else if(pipes[y+1][x] == 'L')
+                        {
+                            coord = explore_tube(x, y+1, DOWN, RIGHT);
+                        }
+                    }
                 }
                 else if((wall == UP) && (y > 0) && !locations[y-1][x].visited)
                 {
@@ -530,14 +636,29 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
             else if(symbol == 'J')
             {
                 //we reached a bend, check where the wall is, otherwise it might be a dead end
-                if(wall == DOWN)
+                if(wall == UP)
                 {
-                    //wall up, we're moving left -> dead end
+                    //bend
+                    if(y > 0)
+                    {
+                        if(pipes[y-1][x] == '|')
+                        {
+                            coord = explore_tube(x, y-1, LEFT, UP);
+                        }
+                        else if(pipes[y-1][x] == '7')
+                        {
+                            coord = explore_tube(x, y-1, DOWN, LEFT);
+                        }                        
+                        else if(pipes[y-1][x] == 'F')
+                        {
+                            coord = explore_tube(x, y-1, UP, RIGHT);
+                        }
+                    }
                 }
-                else if((wall == UP) && (y > 0) && !locations[y-1][x].visited)
+                else if((wall == DOWN) && (y < pipes.size()) && !locations[y+1][x].visited)
                 {
                     //gap opened up
-                    coord.push_back({x, y-1});
+                    coord.push_back({x, y+1});
                 }
                 else if((x < pipes[y].length()-1) && !locations[y][x+1].visited)                
                 {
@@ -547,9 +668,9 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                 else if((x < pipes[y].length()-1) && locations[y][x+1].visited)
                 {   
                     //bend
-                    if(y > 0)
+                    if(y > pipes.size()-1)
                     {
-                        coord = explore_tube(x, y-1, RIGHT, UP);
+                        coord = explore_tube(x, y+1, LEFT, UP);
                     }
                 }
             }
@@ -571,7 +692,97 @@ std::vector<coordinates_t> Elves::get_next_nest(int x, int y)
     char symbol = '.';
     if(is_wall)
     {
-        //we have entered a tube from the start
+        //we have entered a tube from the west
+        if(x == 0)
+        {
+            if(symbol == 'F')
+            {
+                //check for wall, otherwise there is another possibility to get there without exploring the tube
+                if((y > 0) && locations[y-1][x].visited)
+                {
+                    from_tube = explore_tube(x+1, y, UP, RIGHT);
+                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                }
+            }
+            if(symbol == 'L')
+            {
+                //check for wall, otherwise there is another possibility to get there without exploring the tube
+                if((y < pipes.size()-1) && locations[y+1][x].visited)
+                {
+                    from_tube = explore_tube(x+1, y, DOWN, RIGHT);
+                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                }
+            }
+        }
+
+        //we have entered a tube from the east
+        if(x == pipes[y].length()-1)
+        {
+            if(symbol == '7')
+            {
+                //check for wall, otherwise there is another possibility to get there without exploring the tube
+                if((y > 0) && locations[y-1][x].visited)
+                {
+                    from_tube = explore_tube(x-1, y, UP, LEFT);
+                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                }
+            }
+            if(symbol == 'J')
+            {
+                //check for wall, otherwise there is another possibility to get there without exploring the tube
+                if((y < pipes.size()-1) && locations[y+1][x].visited)
+                {
+                    from_tube = explore_tube(x-1, y, DOWN, LEFT);
+                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                }
+            }
+        }
+
+        //we have entered a tube from the north
+        if(y == 0)
+        {
+            if(symbol == '7')
+            {
+                //check for wall, otherwise there is another possibility to get there without exploring the tube
+                if((x < pipes[y].length()-1) && locations[y][x+1].visited)
+                {
+                    from_tube = explore_tube(x, y+1, LEFT, DOWN);
+                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                }
+            }
+            if(symbol == 'F')
+            {
+                //check for wall, otherwise there is another possibility to get there without exploring the tube
+                if((x > 0) && locations[y][x-1].visited)
+                {
+                    from_tube = explore_tube(x, y+1, RIGHT, DOWN);
+                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                }
+            }
+        }
+
+        //we have entered a tube from the south
+        if(y == pipes.size()-1)
+        {
+            if(symbol == 'J')
+            {
+                //check for wall, otherwise there is another possibility to get there without exploring the tube
+                if((x < pipes[y].length()-1) && locations[y][x+1].visited)
+                {
+                    from_tube = explore_tube(x, y-1, RIGHT, UP);
+                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                }
+            }
+            if(symbol == 'L')
+            {
+                //check for wall, otherwise there is another possibility to get there without exploring the tube
+                if((x > 0) && locations[y][x-1].visited)
+                {
+                    from_tube = explore_tube(x, y-1, LEFT, UP);
+                    possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
+                }
+            }
+        }
     }
     else
     {
