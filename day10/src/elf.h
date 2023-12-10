@@ -39,6 +39,7 @@ class Elves {
         Elves(char * file_name);
         std::vector<coordinates_t> get_next(int x, int y);
         std::vector<coordinates_t> get_next_nest(int x, int y);
+        std::vector<coordinates_t> explore_tube(int x, int y, direction_t wall, direction_t dir);
         int get_farthest();
         int get_nest();
 
