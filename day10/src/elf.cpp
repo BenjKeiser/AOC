@@ -44,7 +44,7 @@ void Elves::print_nest()
                 }
                 else
                 {
-                    std::cout << ".";
+                    std::cout << "O";
                 }
             }
         }
@@ -235,7 +235,7 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
     // we explore a tube until we find an opening
     std::vector<coordinates_t> coord;
     char symbol = pipes[y][x];
-
+    std::cout << "\t\ttube:" << x << ", " << y << ": " << symbol << std::endl;
     switch(dir)
     {
         case UP:
@@ -256,7 +256,7 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                     coord = explore_tube(x, y-1, wall, dir);
                 }
             }
-            else if((symbol == 'L') || (symbol == 'J'))
+            else if(symbol == 'L' || symbol == 'J')
             {
                 //we just entered a tube, no need to check for a gap
                 coord = explore_tube(x, y-1, wall, dir);
@@ -707,12 +707,12 @@ std::vector<coordinates_t> Elves::get_next_nest(int x, int y)
                 symbol = pipes[y+1][x];
                 if(symbol == '7')
                 {
-                    from_tube = explore_tube(x, y+1, RIGHT, DOWN);
+                    from_tube = explore_tube(x, y+1, LEFT, DOWN);
                     possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
                 }
                 if(symbol == 'F')
                 {
-                    from_tube = explore_tube(x, y+1, LEFT, DOWN);
+                    from_tube = explore_tube(x, y+1, RIGHT, DOWN);
                     possible_nodes.insert(possible_nodes.end(), from_tube.begin(), from_tube.end());
                 }
             }
