@@ -234,6 +234,7 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
 {
     // we explore a tube until we find an opening
     std::vector<coordinates_t> coord;
+    
     char symbol = pipes[y][x];
     std::cout << "\t\ttube:" << x << ", " << y << ": " << symbol << std::endl;
     switch(dir)
@@ -256,10 +257,27 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                     coord = explore_tube(x, y-1, wall, dir);
                 }
             }
-            else if(symbol == 'L' || symbol == 'J')
+            else if(symbol == 'L')
             {
-                //we just entered a tube, no need to check for a gap
-                coord = explore_tube(x, y-1, wall, dir);
+                if((wall == LEFT) && (x>0) && !locations[y][x-1].visited)
+                {
+                    coord.push_back({x-1, y});
+                }
+                else
+                {                    
+                    coord = explore_tube(x, y-1, wall, dir);
+                }
+            }
+            else if(symbol == 'J')
+            {
+                if((wall == RIGHT) && (x<pipes[y].length()) && !locations[y][x+1].visited)
+                {
+                    coord.push_back({x+1, y});
+                }
+                else
+                {                    
+                    coord = explore_tube(x, y-1, wall, dir);
+                }
             }
             else if(symbol == 'F')
             {
@@ -367,10 +385,27 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                     coord = explore_tube(x, y+1, wall, dir);
                 }
             }
-            else if((symbol == 'F') || (symbol == '7'))
+            else if(symbol == 'F')
             {
-                //we just entered a tube, no need to check for a gap
-                coord = explore_tube(x, y+1, wall, dir);
+                if((wall == RIGHT) && (x>0) && !locations[y][x-1].visited)
+                {
+                    coord.push_back({x-1, y});
+                }
+                else
+                {                    
+                    coord = explore_tube(x, y+1, wall, dir);
+                }
+            } 
+            else if(symbol == '7')
+            {
+                if((wall == LEFT) && (x<pipes[y].length()-1) && !locations[y][x+1].visited)
+                {
+                    coord.push_back({x+1, y});
+                }
+                else
+                {                    
+                    coord = explore_tube(x, y+1, wall, dir);
+                }
             }       
             else if(symbol == 'L')
             {
@@ -477,10 +512,27 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                     coord = explore_tube(x-1, y, wall, dir);
                 }
             }
-            else if((symbol == '7') || (symbol == 'J'))
+            else if(symbol == '7')
             {
-                //we just entered a tube, no need to check for a gap
-                coord = explore_tube(x-1, y, wall, dir);
+                if((wall == UP) && (y>0) && !locations[y-1][x].visited)
+                {
+                    coord.push_back({x, y-1});
+                }
+                else
+                {                    
+                    coord = explore_tube(x-1, y, wall, dir);
+                }
+            }
+            else if(symbol == 'J')
+            {
+                if((wall == DOWN) && (y<pipes.size()-1) && !locations[y+1][x].visited)
+                {
+                    coord.push_back({x, y+1});
+                }
+                else
+                {                    
+                    coord = explore_tube(x-1, y, wall, dir);
+                }
             }
             else if(symbol == 'F')
             {
@@ -587,10 +639,27 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
                     coord = explore_tube(x+1, y, wall, dir);
                 }
             }
-            else if((symbol == 'F') || (symbol == 'L'))
+            else if(symbol == 'F')
             {
-                //we just entered a tube, no need to check for a gap
-                coord = explore_tube(x+1, y, wall, dir);
+                if((wall == UP) && (y > 0) && !locations[y-1][x].visited)
+                {
+                    coord.push_back({x, y-1});
+                }
+                else
+                {                    
+                    coord = explore_tube(x+1, y, wall, dir);
+                }
+            }
+            else if(symbol == 'L')
+            {
+                if((wall == DOWN) && (y < pipes[y].length()-1) && !locations[y+1][x].visited)
+                {
+                    coord.push_back({x, y+1});
+                }
+                else
+                {                    
+                    coord = explore_tube(x+1, y, wall, dir);
+                }
             }
             else if(symbol == '7')
             {
