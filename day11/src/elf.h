@@ -11,7 +11,7 @@ class Elves {
         std::vector<std::string> galaxy;
     public:
         Elves(char * file_name);
-        int get_shortest_paths();
+        int64_t get_shortest_paths(int factor);
 };
 
 #endif /* ELF_H */

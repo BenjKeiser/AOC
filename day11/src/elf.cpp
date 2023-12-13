@@ -10,6 +10,11 @@ struct coordinates_t {
     int y;
 };
 
+struct expansion_t {
+    std::vector<int> x_exp;
+    std::vector<int> y_exp;
+};
+
 void print_galaxy(std::vector<std::string> g)
 {
     for(auto & s : g)
@@ -20,7 +25,7 @@ void print_galaxy(std::vector<std::string> g)
 }
 
 
-std::vector<std::string> expand_galaxy(std::vector<std::string> * galaxies)
+expansion_t expand_galaxy(std::vector<std::string> * galaxies)
 {
     std::vector<std::string> exp_gal = *galaxies;
     std::vector<int> x_i;
@@ -71,7 +76,7 @@ std::vector<std::string> expand_galaxy(std::vector<std::string> * galaxies)
         exp_gal.insert(exp_gal.begin()+y_i[i], exp_gal[y_i[i]]);
     }
 
-    return exp_gal;
+    return {x_i, y_i};
 }
 
 std::vector<coordinates_t> get_galaxy_coords(std::vector<std::string> * galaxies)
@@ -91,21 +96,45 @@ std::vector<coordinates_t> get_galaxy_coords(std::vector<std::string> * galaxies
     return gals;
 }
 
-int Elves::get_shortest_paths()
+
+int64_t Elves::get_shortest_paths(int factor)
 {
-    int sum = 0;
-    std::vector<std::string> e_gal;
+    int64_t sum = 0;
+    expansion_t exp_gal;
     std::vector<coordinates_t> g_coord;
-    print_galaxy(galaxy);
-    e_gal = expand_galaxy(&galaxy);
-    print_galaxy(e_gal);
-    g_coord = get_galaxy_coords(&e_gal);
+    //print_galaxy(galaxy);
+    exp_gal = expand_galaxy(&galaxy);
+    g_coord = get_galaxy_coords(&galaxy);
+    int nb_exp = 0;
+
+    int64_t x_diff = 0;
+    int64_t y_diff = 0;
 
     for(int i = 0; i < g_coord.size(); i++)
     {
         for(int k = i; k < g_coord.size(); k++)
         {
-            sum += std::abs(g_coord[i].x - g_coord[k].x) + std::abs(g_coord[i].y - g_coord[k].y);
+            nb_exp = 0;
+            for(auto & x_exp : exp_gal.x_exp)
+            {
+                if((std::min(g_coord[i].x, g_coord[k].x) < x_exp) && (std::max(g_coord[i].x, g_coord[k].x) > x_exp))
+                {
+                    nb_exp++;
+                }
+            }
+            x_diff = std::abs(g_coord[i].x - g_coord[k].x) + (nb_exp * (factor - 1));
+
+            nb_exp = 0;
+            for(auto & y_exp : exp_gal.y_exp)
+            {
+                if((std::min(g_coord[i].y, g_coord[k].y) < y_exp) && (std::max(g_coord[i].y, g_coord[k].y) > y_exp))
+                {
+                    nb_exp++;
+                }
+            }
+            y_diff = std::abs(g_coord[i].y - g_coord[k].y) + (nb_exp * (factor - 1));
+
+            sum += y_diff + x_diff;
         }
     }
 
