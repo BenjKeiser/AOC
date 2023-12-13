@@ -18,6 +18,12 @@ struct coordinates_t {
     int y;
 };
 
+struct wall_t {
+    coordinates_t coord;
+    direction_t wall;
+    direction_t dir;
+};
+
 struct location_t {
     int steps;
     bool visited;
@@ -39,7 +45,10 @@ class Elves {
         Elves(char * file_name);
         std::vector<coordinates_t> get_next(int x, int y);
         std::vector<coordinates_t> get_next_nest(int x, int y);
+        wall_t get_next_wall(wall_t pos);
+        std::vector<coordinates_t> get_outside_nodes(wall_t pos);
         std::vector<coordinates_t> explore_tube(int x, int y, direction_t wall, direction_t dir);
+        void replace_S();
         int get_farthest();
         int get_nest();
 
