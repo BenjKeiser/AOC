@@ -559,11 +559,11 @@ wall_t Elves::get_next_wall(wall_t pos)
             {
                 if(wall == DOWN)
                 {
-                    next_wall = {{x, y+1}, RIGHT, DOWN};
+                    next_wall = {{x, y+1}, LEFT, DOWN};
                 }
                 else if(wall == UP)
                 {
-                    next_wall = {{x, y+1}, LEFT, DOWN};
+                    next_wall = {{x, y+1}, RIGHT, DOWN};
                 }
             }
             else if(symbol == 'L')
