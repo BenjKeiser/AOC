@@ -34,6 +34,10 @@ void Elves::print_nest()
         {
             if(locations[y][x].visited)
             {
+                if(!locations[y][x].nest_visited)
+                {
+                    std::cout << "FAIL: " << x << ", " << y << std::endl;
+                }
                 std::cout << pipes[y][x];
             }
             else
@@ -239,7 +243,7 @@ std::vector<coordinates_t> Elves::get_outside_nodes(wall_t pos)
     direction_t wall = pos.wall;
     direction_t dir = pos.dir;
 
-    std::cout << "Outside Node: " << x << ", " << y << std::endl;
+    //std::cout << "Outside Node: " << x << ", " << y << std::endl;
     std::vector<coordinates_t> coord;
 
     char symbol = pipes[y][x];
@@ -295,7 +299,7 @@ std::vector<coordinates_t> Elves::get_outside_nodes(wall_t pos)
                     coord.push_back({x+1, y});
                 }
                 
-                if(((wall == RIGHT) && y > 0) && !locations[y-1][x].visited)                
+                if((wall == RIGHT) && (y > 0) && !locations[y-1][x].visited)                
                 {
                     //gap ahead
                     coord.push_back({x, y-1});
@@ -486,7 +490,7 @@ wall_t Elves::get_next_wall(wall_t pos)
 
     char symbol = pipes[y][x];
 
-    std::cout << "Wall: " <<  symbol << " -> " << x << ", " << y << "; " << wall << ", " << dir << std::endl;
+    //std::cout << "Wall: " <<  symbol << " -> " << x << ", " << y << "; " << wall << ", " << dir << std::endl;
 
     switch(dir)
     {
@@ -527,22 +531,22 @@ wall_t Elves::get_next_wall(wall_t pos)
             {
                 if(wall == LEFT)
                 {
-                    next_wall = {{x+1, y}, UP, LEFT};
+                    next_wall = {{x+1, y}, UP, RIGHT};
                 }
                 else if(wall == RIGHT)
                 {
-                    next_wall = {{x+1, y}, DOWN, LEFT};
+                    next_wall = {{x+1, y}, DOWN, RIGHT};
                 }
             }
             else if(symbol == 'J')
             {
                 if(wall == LEFT)
                 {
-                    next_wall = {{x-1, y}, DOWN, RIGHT};
+                    next_wall = {{x-1, y}, DOWN, LEFT};
                 }
                 else if(wall == RIGHT)
                 {
-                    next_wall = {{x-1, y}, UP, RIGHT};
+                    next_wall = {{x-1, y}, UP, LEFT};
                 }
             }
             break;
@@ -613,7 +617,7 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
     // we explore a tube until we find an opening
     std::vector<wall_t> queue;
 
-    std::cout << "explore_tube: " << x << ", " << y << std::endl;
+    //std::cout << "explore_tube: " << x << ", " << y << std::endl;
 
     queue.push_back({{x, y}, wall, dir});
     
@@ -645,7 +649,7 @@ std::vector<coordinates_t> Elves::explore_tube(int x, int y, direction_t wall, d
         queue.push_back(next);
     }
 
-    std::cout << "explore_tube done" << std::endl;
+    //std::cout << "explore_tube done" << std::endl;
     return coord;
 }
 
@@ -1049,12 +1053,12 @@ int Elves::get_nest()
 
 
         //check the neighbours
-        std::cout << current.x << ", " << current.y << ":" << std::endl;
+        //std::cout << current.x << ", " << current.y << ":" << std::endl;
         locations[current.y][current.x].next_nest = get_next_nest(current.x, current.y);
 
         for(auto & l : locations[current.y][current.x].next_nest)
         {
-            std::cout << "\t" << l.x << ", " << l.y << std::endl;
+            //std::cout << "\t" << l.x << ", " << l.y << std::endl;
             if(!locations[l.y][l.x].nest_visited)
             {
                 queue.push_back(l);
