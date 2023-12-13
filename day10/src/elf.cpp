@@ -34,10 +34,6 @@ void Elves::print_nest()
         {
             if(locations[y][x].visited)
             {
-                if(!locations[y][x].nest_visited)
-                {
-                    std::cout << "FAIL: " << x << ", " << y << std::endl;
-                }
                 std::cout << pipes[y][x];
             }
             else
