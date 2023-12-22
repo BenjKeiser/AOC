@@ -6,12 +6,15 @@
 #include <utility>
 #include <unordered_map>
 
-
+struct lens_t {
+    std::string label;
+    int focal_length;
+};
 
 class Elves {
     private:
         std::vector<std::string> steps;
-        std::vector<std::unordered_map<std::string, int>> boxes;
+        std::vector<std::vector<lens_t>> boxes;
 
         unsigned char get_hash(std::string str);
 

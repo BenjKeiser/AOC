@@ -7,22 +7,22 @@
 
 #define FACTOR 17
 
-void print_map(const std::unordered_map <std::string, int>& m)
+void print_box(const std::vector <lens_t> & box)
 {
-    // Iterate using C++17 facilities
-    for (const auto& [key, value] : m)
-        std::cout << '[' << key << "] = " << value << "; ";
- 
+    for (const auto & l : box)
+    {
+        std::cout << '[' << l.label << " " << l.focal_length << "] ";
+    }
     std::cout << std::endl;
 }
 
-void print_boxes(const std::vector<std::unordered_map<std::string, int>> & boxes)
+void print_boxes(const std::vector<std::vector<lens_t>> & boxes)
 {
     for(auto & b : boxes)
     {
         if(b.size() > 0)
         {
-            print_map(b);
+            print_box(b);
         }
     }
     std::cout << std::endl;
@@ -48,8 +48,6 @@ uint64_t Elves::get_hash_sum()
     {
         hash = get_hash(s);
         sum += hash;
-
-        //std::cout << s << ": " << (int)hash << std::endl;
     }
 
     return sum;
@@ -62,34 +60,62 @@ uint64_t Elves::get_focus_power()
     size_t pos = 0;
     uint64_t val = 0;
 
+    bool found = false;
+
     for(auto & s: steps)
     {
+        found = false;
         pos = s.find('=');
+        
         if(pos != std::string::npos)
         {
             hash = get_hash(s.substr(0, pos));
-            boxes[hash][s.substr(0, pos)] = std::stoi(s.substr(pos+1));
+            for(int i = 0; i < boxes[hash].size(); i++)
+            {
+                if(boxes[hash][i].label == s.substr(0, pos))
+                {
+                    boxes[hash][i].focal_length = std::stoi(s.substr(pos+1));
+                    found = true;
+                    break;
+                }
+            }
 
+            if(!found)
+            {
+                boxes[hash].push_back({s.substr(0, pos), std::stoi(s.substr(pos+1))});
+            }
         }
         else
         {
             pos = s.find('-');
             hash = get_hash(s.substr(0, pos));
-            boxes[hash].erase(s.substr(0, pos));
+                
+            auto it = boxes[hash].begin();
+
+            while ( it != boxes[hash].end())
+            {
+                if (it->label == s.substr(0, pos))
+                {
+                    it = boxes[hash].erase(it);
+                }
+                else
+                {
+                    it++;
+                }
+            }
         }        
-        print_boxes(boxes);
+        //print_boxes(boxes);
     }
+
+    print_boxes(boxes);
 
     for(int i = 0; i < boxes.size(); i++)
     {
-        int k = 0;
-        for (auto iter = boxes[i].begin(); iter != boxes[i].end(); ++iter) 
+        for (int k = 0; k < boxes[i].size(); k++) 
         {
-            val = (i+1) * (boxes[i].size() - k) * iter->second;
+            val = (i+1) * (k+1) * boxes[i][k].focal_length;
 
-            //std::cout << iter->first << ": " << iter->second << " = " << val << std::endl;
             sum += val;
-            k++;
         }
     }
 
@@ -101,7 +127,7 @@ Elves::Elves(char * file_name)
     std::ifstream file(file_name);
     std::string line;
 
-    std::unordered_map<std::string, int> box;
+    std::vector<lens_t> box;
 
     // parse the file
     if (file.is_open()) 
