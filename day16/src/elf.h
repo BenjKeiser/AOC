@@ -43,6 +43,7 @@ class Elves {
     public:
         Elves(char * file_name);
         uint64_t get_energized(move_t start);
+        uint64_t get_max_energized();
 
 };
 

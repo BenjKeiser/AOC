@@ -182,6 +182,14 @@ uint64_t Elves::get_energized(move_t start)
     std::vector<move_t> queue;
     std::vector<move_t> moves;
 
+    std::vector<std::vector<location_t>> locations;
+    std::vector<location_t> loc;
+    for(int y = 0; y < grid.size(); y++)
+    {
+        loc.resize(grid[y].length());
+        locations.push_back(loc);
+    }
+
     queue.push_back(current);
 
 
@@ -217,12 +225,55 @@ uint64_t Elves::get_energized(move_t start)
     return sum;
 }
 
+uint64_t Elves::get_max_energized()
+{
+    uint64_t max = 0;
+
+    uint64_t energized = 0;
+
+    for(int y = 0; y < grid.size(); y++)
+    {
+        energized = get_energized({0, y, RIGHT});
+        if(energized > max)
+        {
+            max = energized;
+        }
+    }
+
+    for(int y = 0; y < grid.size(); y++)
+    {
+        energized = get_energized({(int)grid[y].length()-1, y, LEFT});
+        if(energized > max)
+        {
+            max = energized;
+        }
+    }
+
+    for(int x = 0; x < grid[0].length(); x++)
+    {
+        energized = get_energized({x, 0, DOWN});
+        if(energized > max)
+        {
+            max = energized;
+        }
+    }
+
+    for(int x = 0; x < grid[0].length(); x++)
+    {
+        energized = get_energized({x, (int)grid.size()-1, UP});
+        if(energized > max)
+        {
+            max = energized;
+        }
+    }
+
+    return max;
+}
+
 Elves::Elves(char * file_name)
 {
     std::ifstream file(file_name);
     std::string line;
-
-    std::vector<location_t> loc;
 
     // parse the file
     if (file.is_open()) 
@@ -232,9 +283,6 @@ Elves::Elves(char * file_name)
             if(line.length() > 0)
             {
                 grid.push_back(line);
-
-                loc.resize(line.length());
-                locations.push_back(loc);
             }
         }
         
