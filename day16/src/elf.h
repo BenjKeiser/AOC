@@ -36,7 +36,6 @@ struct location_t {
 
 class Elves {
     private:
-        std::vector<std::vector<location_t>> locations;
         std::vector<std::string> grid;
         std::vector<move_t> get_next_moves(move_t move);
 
