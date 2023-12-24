@@ -7,6 +7,24 @@
 
 #define DBG 0
 
+void print_map(const std::map<row_t, int>& m)
+{
+    for (const auto& [key, value] : m)
+    {
+        std::cout << '[';
+        for(int i = 0; i < key.spring_list.size(); i++)
+        {
+            std::cout << key.spring_list[i];
+        } 
+        std::cout << ' ';
+        for(int i = 0; i < key.damaged_groups.size(); i++)
+        {
+            std::cout << key.damaged_groups[i] << ",";
+        }
+        std::cout << "] = " << value << std::endl;;
+    }
+}
+
 spring_t Elves::symbol_to_spring(char symbol)
 {
     spring_t spring;
@@ -49,101 +67,126 @@ uint64_t Elves::get_arrangement(row_t row)
 
     bool possible = true;
 
-#if DBG
-    std::cout << "====================" << std::endl;
-    std::cout << "Current: " << nb_dmg << std::endl;
-    std::cout << "Remaining: " << damaged.size() << std::endl;
-    for(auto & v : damaged)
+    int left = std::accumulate(damaged.begin(), damaged.end(), 0);
+
+    if(springs.size() < left)
     {
-        std::cout << v << ",";
+        return 0;
     }
-    std::cout << std::endl;
 
-    std::cout << "Springs size: " << springs.size() << std::endl;
-#endif
-    for(int i = 0; i < springs.size(); i++)
+    auto search = results.find(row);
+    if (search == results.end()) 
     {
-        possible = true;
-        if(springs[i] == UNKNOWN || springs[i] == DAMAGED)
+    #if DBG
+        std::cout << "====================" << std::endl;
+        std::cout << "Current: " << nb_dmg << std::endl;
+        std::cout << "Remaining: " << damaged.size() << std::endl;
+        for(auto & v : damaged)
         {
-            // Try to fit the number of damanged springs
-#if DBG
-            std::cout << "Try to fit: " << i << " -> " << i + nb_dmg << std::endl;
-#endif
-            for(int k = i; k < i + nb_dmg; k++)
-            {
-                if(k >= springs.size())
-                {
-                    // We reached the end of the springs before finding a possibility
-                    possible = false;
-                    break;
-                }
-                if(springs[k] == OPERATIONAL)
-                {
-                    // We cannot fit the number of damaged springs
-                    possible = false;
-                    break;
-                }
-            }
+            std::cout << v << ",";
+        }
+        std::cout << std::endl;
 
-            if(possible)
+        std::cout << "Springs size: " << springs.size() << std::endl;
+    #endif
+        for(int i = 0; i < springs.size() - left; i++)
+        {
+            possible = true;
+            if(springs[i] == UNKNOWN || springs[i] == DAMAGED)
             {
-#if DBG
-                std::cout << "Possible: " << i << " Left: " << damaged.size() << " " << damaged.empty() << std::endl;
-#endif
-                //it is possible and there are no more damaged springs group
-                if(damaged.empty())
+                // Try to fit the number of damanged springs
+    #if DBG
+                std::cout << "Try to fit: " << i << " -> " << i + nb_dmg << std::endl;
+    #endif
+                for(int k = i; k < i + nb_dmg; k++)
                 {
-#if DBG
-                    std::cout << "End" << std::endl;
-#endif
-                    //check that the remainder of the springs does not contain damaged springs
-                    if(std::find(springs.begin()+i+nb_dmg, springs.end(), DAMAGED) != springs.end())
+                    if(k >= springs.size())
                     {
-                        //damaged springs where there should be none
-#if DBG
-                        std::cout << "damaged springs where there should be none" << std::endl;
-#endif
+                        // We reached the end of the springs before finding a possibility
+                        possible = false;
+                        break;
+                    }
+                    if(springs[k] == OPERATIONAL)
+                    {
+                        // We cannot fit the number of damaged springs
+                        possible = false;
+                        break;
+                    }
+                }
+
+                if(possible)
+                {
+    #if DBG
+                    std::cout << "Possible: " << i << " Left: " << damaged.size() << " " << damaged.empty() << std::endl;
+    #endif
+                    //it is possible and there are no more damaged springs group
+                    if(damaged.empty())
+                    {
+    #if DBG
+                        std::cout << "End" << std::endl;
+    #endif
+                        //check that the remainder of the springs does not contain damaged springs
+                        if(std::find(springs.begin()+i+nb_dmg, springs.end(), DAMAGED) != springs.end())
+                        {
+                            //damaged springs where there should be none
+    #if DBG
+                            std::cout << "damaged springs where there should be none" << std::endl;
+    #endif
+                        }
+                        else
+                        {
+                            arr++;
+    #if DBG
+                            std::cout << "found an arrangement" << std::endl;
+    #endif
+                        }
                     }
                     else
                     {
-                        arr++;
-#if DBG
-                        std::cout << "found an arrangement" << std::endl;
-#endif
-                    }
-                }
-                else
-                {
-                    if(i+nb_dmg < springs.size())
-                    {
-                        if(springs[i+nb_dmg] != DAMAGED)
+                        if(i+nb_dmg < springs.size())
                         {
-                            next_springs = springs;
-                            next_springs.erase(next_springs.begin(), next_springs.begin()+i+nb_dmg+1);
-                            arr += get_arrangement({next_springs, damaged});
+                            if(springs[i+nb_dmg] != DAMAGED)
+                            {
+                                next_springs = springs;
+                                next_springs.erase(next_springs.begin(), next_springs.begin()+i+nb_dmg+1);
+                                arr += get_arrangement({next_springs, damaged});
+                            }
                         }
                     }
-                }
-            }            
+                }            
+            }
+            if(springs[i] == DAMAGED)
+            {
+                //We are at the only possible start for this series
+                break;
+            }
         }
-        if(springs[i] == DAMAGED)
+    #if DBG
+        std::cout << "********************" << std::endl;
+    #endif
+
+        if(arr > 0)
         {
-            //We are at the only possible start for this series
-            break;
-        }
-    }
+            results[row] = arr;
 #if DBG
-    std::cout << "********************" << std::endl;
+            print_map(results);
 #endif
+        }
+    } 
+    else 
+    {
+        //std::cout << "found existing" << std::endl;
+        arr = search->second;
+    }
 
     return arr;
 }
 
 
-uint64_t Elves::get_arrangements()
+uint64_t Elves::get_arrangements(int factor)
 {
     uint64_t arr = 0;
+    row_t row;
     for(auto & r : all_springs)
     {
 #if DBG
@@ -159,7 +202,15 @@ uint64_t Elves::get_arrangements()
         }
         std::cout << std::endl;
 #endif
-        arr += get_arrangement(r);
+        row.spring_list = r.spring_list;
+        row.damaged_groups = r.damaged_groups;
+        for(int i = 0; i < factor - 1; i++)
+        {
+            row.spring_list.push_back(UNKNOWN);
+            row.spring_list.insert(row.spring_list.end(), r.spring_list.begin(), r.spring_list.end());
+            row.damaged_groups.insert(row.damaged_groups.end(), r.damaged_groups.begin(), r.damaged_groups.end());
+        }
+        arr += get_arrangement(row);
     }
     return arr;
 }
