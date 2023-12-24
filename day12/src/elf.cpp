@@ -68,9 +68,11 @@ uint64_t Elves::get_arrangement(row_t row)
     bool possible = true;
 
     int left = std::accumulate(damaged.begin(), damaged.end(), 0);
+    left += damaged.size();
 
     if(springs.size() < left)
     {
+        // we cannot possibly fit the remainder so we might as well just stop
         return 0;
     }
 
@@ -187,21 +189,10 @@ uint64_t Elves::get_arrangements(int factor)
 {
     uint64_t arr = 0;
     row_t row;
+    int i = 0;
     for(auto & r : all_springs)
     {
-#if DBG
-        for(auto & s : r.spring_list)
-        {
-            std::cout << s;
-        }
-        std::cout << std::endl;
-
-        for(auto & s : r.damaged_groups)
-        {
-            std::cout << s <<",";
-        }
-        std::cout << std::endl;
-#endif
+        std::cout << i++ << std::endl;
         row.spring_list = r.spring_list;
         row.damaged_groups = r.damaged_groups;
         for(int i = 0; i < factor - 1; i++)
@@ -210,6 +201,21 @@ uint64_t Elves::get_arrangements(int factor)
             row.spring_list.insert(row.spring_list.end(), r.spring_list.begin(), r.spring_list.end());
             row.damaged_groups.insert(row.damaged_groups.end(), r.damaged_groups.begin(), r.damaged_groups.end());
         }
+        
+#if DBG
+        for(auto & s : row.spring_list)
+        {
+            std::cout << s;
+        }
+        std::cout << std::endl;
+
+        for(auto & s : row.damaged_groups)
+        {
+            std::cout << s <<",";
+        }
+        std::cout << std::endl;
+#endif
+        results.clear();
         arr += get_arrangement(row);
     }
     return arr;
