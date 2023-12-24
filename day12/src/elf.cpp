@@ -65,6 +65,19 @@ uint64_t Elves::get_arrangement(row_t row)
 
     bool possible = true;
 
+    int left = std::accumulate(damaged.begin(), damaged.end(), 0);
+    if(damaged.size() > 2)
+    {
+        left += damaged.size();
+        left -= 1;
+    }
+
+    if(springs.size() < left)
+    {
+        // we cannot possibly fit the remainder so we might as well just stop
+        return 0;
+    }
+
     auto search = results.find(row);
     if (search == results.end()) 
     {
@@ -80,7 +93,7 @@ uint64_t Elves::get_arrangement(row_t row)
 
         std::cout << "Springs size: " << springs.size() << std::endl;
     #endif
-        for(int i = 0; i < springs.size(); i++)
+        for(int i = 0; i < springs.size() - left; i++)
         {
             possible = true;
             if(springs[i] == UNKNOWN || springs[i] == DAMAGED)
