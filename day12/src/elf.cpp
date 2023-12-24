@@ -57,24 +57,13 @@ struct pos_t {
 uint64_t Elves::get_arrangement(row_t row)
 {
     uint64_t arr = 0;
-
-    std::vector<spring_t> springs = row.spring_list;
-    std::vector<spring_t> next_springs;
+    std::vector<spring_t> springs = {row.spring_list.begin() + row.index, row.spring_list.end()}; 
     std::vector<int> damaged = row.damaged_groups;
 
     int nb_dmg = damaged.front();
     damaged.erase(damaged.begin());
 
     bool possible = true;
-
-    int left = std::accumulate(damaged.begin(), damaged.end(), 0);
-    left += damaged.size();
-
-    if(springs.size() < left)
-    {
-        // we cannot possibly fit the remainder so we might as well just stop
-        return 0;
-    }
 
     auto search = results.find(row);
     if (search == results.end()) 
@@ -91,7 +80,7 @@ uint64_t Elves::get_arrangement(row_t row)
 
         std::cout << "Springs size: " << springs.size() << std::endl;
     #endif
-        for(int i = 0; i < springs.size() - left; i++)
+        for(int i = 0; i < springs.size(); i++)
         {
             possible = true;
             if(springs[i] == UNKNOWN || springs[i] == DAMAGED)
@@ -149,9 +138,7 @@ uint64_t Elves::get_arrangement(row_t row)
                         {
                             if(springs[i+nb_dmg] != DAMAGED)
                             {
-                                next_springs = springs;
-                                next_springs.erase(next_springs.begin(), next_springs.begin()+i+nb_dmg+1);
-                                arr += get_arrangement({next_springs, damaged});
+                                arr += get_arrangement({row.spring_list, damaged, row.index+i+nb_dmg+1});
                             }
                         }
                     }
@@ -193,6 +180,7 @@ uint64_t Elves::get_arrangements(int factor)
     for(auto & r : all_springs)
     {
         std::cout << i++ << std::endl;
+        row.index = 0;
         row.spring_list = r.spring_list;
         row.damaged_groups = r.damaged_groups;
         for(int i = 0; i < factor - 1; i++)
@@ -250,7 +238,7 @@ Elves::Elves(char * file_name)
                             ss.ignore();
                         }
                     }
-                    all_springs.push_back({spring_list, damaged_groups});
+                    all_springs.push_back({spring_list, damaged_groups, 0});
                 }
                 else
                 {

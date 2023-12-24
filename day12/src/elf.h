@@ -16,18 +16,12 @@ enum spring_t {
 struct row_t {
     std::vector<spring_t> spring_list;
     std::vector<int> damaged_groups;
+    int index;
 
     bool const operator==(const row_t &r) const {
-        if(spring_list.size() == r.spring_list.size())
+        if(index != r.index)
         {
-            if(spring_list != r.spring_list)
-            {
                 return false;
-            }
-        }
-        else
-        {
-            return false;
         }
         if(damaged_groups.size() == r.damaged_groups.size())
         {
@@ -44,19 +38,9 @@ struct row_t {
     }
 
     bool const operator<(const row_t &r) const {
-        if(spring_list.size() != r.spring_list.size())
+        if(index != r.index)
         {
-            return spring_list.size() < r.spring_list.size();
-        }
-        else
-        {
-            for(int i = 0; i < spring_list.size(); i++)
-            {
-                if(spring_list[i] != r.spring_list[i])
-                {
-                    return spring_list[i] < r.spring_list[i];
-                }
-            }
+            return index < r.index;
         }
 
         if(damaged_groups.size() != r.damaged_groups.size())
