@@ -167,13 +167,11 @@ uint64_t Elves::get_arrangement(row_t row)
         std::cout << "********************" << std::endl;
     #endif
 
-        if(arr > 0)
-        {
-            results[row] = arr;
+        results[row] = arr;
 #if DBG
-            print_map(results);
+        print_map(results);
 #endif
-        }
+        
     } 
     else 
     {
@@ -192,7 +190,6 @@ uint64_t Elves::get_arrangements(int factor)
     int i = 0;
     for(auto & r : all_springs)
     {
-        std::cout << i++ << std::endl;
         row.index = 0;
         row.spring_list = r.spring_list;
         row.damaged_groups = r.damaged_groups;

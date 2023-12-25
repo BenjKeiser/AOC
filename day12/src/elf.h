@@ -71,7 +71,7 @@ auto comp = [](const row_t & a, const row_t & b)
 
 class Elves {
     private:
-        std::map<row_t, int> results;
+        std::map<row_t, uint64_t> results;
         std::vector<row_t> all_springs;
         spring_t symbol_to_spring(char symbol);
         uint64_t get_arrangement(row_t row);
