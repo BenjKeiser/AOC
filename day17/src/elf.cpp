@@ -51,32 +51,35 @@ std::vector<coordinates_t> get_moves(cell k)
     int dx[] = { -1, 0, 1, 0 };
     int dy[] = { 0, 1, 0, -1 };
 
-    std::cout << "get_moves [" << k.x << ", " << k.y << " = " << k.distance << "]: " << std::endl;
+    //std::cout << "get_moves [" << k.x << ", " << k.y << " = " << k.distance << "]: " << std::endl;
 
     // looping through all neighbours
     for (int i = 0; i < 4; i++) 
     {
-        int x = k.x + dx[i];
-        int y = k.y + dy[i];
+        int delta_x = dx[i];
+        int delta_y = dy[i];
+        int x = k.x + delta_x;
+        int y = k.y + delta_y;
 
         if(k.prev != NULL)
         {
             //we don't move the way back we came
             if(x == k.prev->x && y == k.prev->y)
             {
-                std::cout << "Previous: " << x << " == " << k.prev->x << ", " << y << " == " << k.prev->y << std::endl;
+                //std::cout << "Previous: " << x << " == " << k.prev->x << ", " << y << " == " << k.prev->y << std::endl;
                 continue;
             }
 
             //check for too long straight line
-            cell previous = k;
+            cell previous(x,y,0,&k);
             bool straight = true;
             for(int i = 0; i < STRAIGHT_LIMIT; i++)
             {
                 if(previous.prev != NULL)
                 {
-                    if((previous.x != previous.prev->x + dx[i]) || (previous.y != previous.prev->y +dy[i]))
+                    if((previous.x != previous.prev->x + delta_x) || (previous.y != previous.prev->y + delta_y))
                     {
+                        //std::cout << "Not straight " << i << ": " << previous.x << " != " << previous.prev->x + delta_x << " || " << previous.y << " != " << previous.prev->y + delta_y << std::endl;
                         straight = false;
                         break;
                     }
@@ -89,12 +92,12 @@ std::vector<coordinates_t> get_moves(cell k)
             }
             if(straight)
             {
-                std::cout << "Straight: " << x << ", " << y << std::endl;
+                //std::cout << "Straight: " << x << ", " << y << std::endl;
                 continue;
             }
         }
 
-        std::cout << x << ", " << y << std::endl;
+        //std::cout << x << ", " << y << std::endl;
         moves.push_back({x, y});
     }
 
@@ -159,11 +162,38 @@ uint64_t Elves::dijkstra()
         }
     }
 
+    bool path[row][col];
+
     for(int y = 0; y < row; y++)
     {
         for(int x = 0; x < col; x++)
         {
-            std::cout << dist[y][x] << " ";
+            path[y][x] = false;
+        }
+    }
+
+    cell current = cell_list[row - 1][col - 1];
+    path[row - 1][col - 1] = true;
+    while(current.prev != NULL)
+    {
+        path[current.y][current.x] = true;
+        current = *current.prev;
+    }
+
+
+    for(int y = 0; y < row; y++)
+    {
+        for(int x = 0; x < col; x++)
+        {
+            if(path[y][x])
+            {
+                std::cout << "x";
+            }
+            else
+            {
+                std::cout << heat_map[y][x];
+            }
+            //std::cout << dist[y][x] << " ";
         }
         std::cout << std::endl;
     }
@@ -196,7 +226,7 @@ Elves::Elves(char * file_name)
         while (std::getline(file, line)) 
         {
             heat.clear();
-            for(int i=0; i<line.length(); i++)
+            for(int i=0; i < line.length(); i++)
             {
                 heat.push_back(line[i]-0x30);
             }
@@ -207,10 +237,11 @@ Elves::Elves(char * file_name)
         {
             for(int x = 0; x < heat_map[0].size(); x++)
             {
-                std::cout << heat_map[y][x] << " ";
+                std::cout << heat_map[y][x];
             }
             std::cout << std::endl;
         }
+        std::cout << std::endl;
 
         file.close();
     }
