@@ -6,8 +6,6 @@
 #include <set>
 #include <queue>
 
-#define STRAIGHT_LIMIT 3
-
 
 enum dir_t {
     WEST = 0,
@@ -32,7 +30,7 @@ struct cell {
 };
 
 //disregarding limits
-std::vector<cell> get_neighbours(cell k)
+std::vector<cell> get_neighbours(cell k, int row, int col, int min_steps, int max_steps)
 {
     std::vector<cell> neighbours;
 
@@ -49,27 +47,35 @@ std::vector<cell> get_neighbours(cell k)
         int x = k.x + delta_x;
         int y = k.y + delta_y;
 
-
-        //we don't move the way back we came
-        if((abs(k.dir - i) == 2) && k.dir != START)
+        if(y >= 0 && y < row && x >= 0 && x < col)
         {
-            continue;
-        }
 
-        //too straight?
-        straight = (dir_t)i == k.dir ? k.straight + 1 : 1;
-        if(straight > STRAIGHT_LIMIT)
-        {
-            continue;
-        }
+            //we don't move the way back we came
+            if((abs(k.dir - i) == 2) && k.dir != START)
+            {
+                continue;
+            }
+            
+            //too straight?
+            straight = (dir_t)i == k.dir ? k.straight + 1 : 1;
+            if(straight > max_steps)
+            {
+                continue;
+            }
 
-        neighbours.push_back(cell(x, y, 0, (dir_t)i, straight));
+            if(k.dir != START && (dir_t)i != k.dir && k.straight < min_steps)
+            {
+                continue;
+            }
+
+            neighbours.push_back(cell(x, y, 0, (dir_t)i, straight));
+        }
     }
 
     return neighbours;
 }
 
-uint64_t Elves::dijkstra()
+uint64_t Elves::dijkstra(int min_steps, int max_steps)
 {
     uint64_t heat_loss = UINT64_MAX;
     int row = heat_map.size();
@@ -93,12 +99,13 @@ uint64_t Elves::dijkstra()
         {
             continue;
         }
+
         if(current.distance >= heat_loss)
         {
             continue;
         }
 
-        if(current.x == row - 1 && current.y == col - 1)
+        if(current.x == col - 1 && current.y == row - 1 && current.straight >= min_steps)
         {
             //we reached the end
             heat_loss = current.distance;
@@ -107,15 +114,12 @@ uint64_t Elves::dijkstra()
         visited.insert({current.x, current.y, current.dir, current.straight});
 
         //get the valid nodes and put them on the queue
-        std::vector<cell> neighbours = get_neighbours(current);
+        std::vector<cell> neighbours = get_neighbours(current, row, col, min_steps, max_steps);
         for(auto & n : neighbours)
         {
-            if(n.y >= 0 && n.y < row && n.x >= 0 && n.x < col)
-            {
-                //add the node
-                n.distance = current.distance + heat_map[n.y][n.x];
-                queue.push(n);                
-            }
+            //add the node
+            n.distance = current.distance + heat_map[n.y][n.x];
+            queue.push(n);
         }
     }
 
@@ -123,11 +127,11 @@ uint64_t Elves::dijkstra()
 }
 
 
-uint64_t Elves::get_heat_loss()
+uint64_t Elves::get_heat_loss(int min_steps, int max_steps)
 {
     uint64_t heat_loss = 0;
 
-    heat_loss = dijkstra();
+    heat_loss = dijkstra(min_steps, max_steps);
 
     return heat_loss;
 }

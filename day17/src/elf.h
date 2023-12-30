@@ -9,10 +9,10 @@
 class Elves {
     private:
         std::vector<std::vector<int>> heat_map;
-        uint64_t dijkstra();
+        uint64_t dijkstra(int min_steps, int max_steps);
     public:
         Elves(char * file_name);
-        uint64_t get_heat_loss();
+        uint64_t get_heat_loss(int min_steps, int max_steps);
 };
 
 #endif /* ELF_H */
