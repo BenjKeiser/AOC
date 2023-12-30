@@ -17,31 +17,6 @@ enum dir_t {
     START = 4
 };
 
-struct pos_t {
-    int x;
-    int y;
-    dir_t dir;
-    int straight;
-
-    // Utility method for comparing two cells
-    bool operator<(const pos_t& other) const
-    {
-        if (x != other.x)
-        {
-            return (x < other.x);
-        }
-        else if(y != other.y)
-        {
-            return (y < other.y);
-        }
-        else
-        {
-            return straight < other.straight;
-        }
-        return false;
-    }
-};
-
 // structure for information of each cell
 struct cell {
     int x;
@@ -59,7 +34,7 @@ struct cell {
 //disregarding limits
 std::vector<cell> get_neighbours(cell k)
 {
-    std::vector<cell> moves;
+    std::vector<cell> neighbours;
 
     // direction arrays for simplification of getting neighbour
     int dx[] = { -1, 0, 1, 0 };
@@ -82,16 +57,16 @@ std::vector<cell> get_neighbours(cell k)
         }
 
         //too straight?
-        straight = (dir_t)i == k.dir ? k.straight+1 : 1;
+        straight = (dir_t)i == k.dir ? k.straight + 1 : 1;
         if(straight > STRAIGHT_LIMIT)
         {
             continue;
         }
 
-        moves.push_back(cell(x, y, 0, (dir_t)i, straight));
+        neighbours.push_back(cell(x, y, 0, (dir_t)i, straight));
     }
 
-    return moves;
+    return neighbours;
 }
 
 uint64_t Elves::dijkstra()
@@ -102,7 +77,7 @@ uint64_t Elves::dijkstra()
 
     //set
     std::priority_queue<cell, std::vector<cell>, std::greater<cell>> queue;
-    std::set<pos_t> visited;
+    std::set<std::tuple<int, int, dir_t, int>> visited;
 
     //Starting point
     queue.push(cell(0, 0, 0, START, 0));
@@ -114,8 +89,7 @@ uint64_t Elves::dijkstra()
         queue.pop();
 
         //check if this was already visited
-        std::set<pos_t>::iterator it = visited.find({current.x, current.y, current.dir, current.straight});
-        if(it != visited.end())
+        if(visited.count({current.x, current.y, current.dir, current.straight}))
         {
             continue;
         }
