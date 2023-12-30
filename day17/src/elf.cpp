@@ -29,7 +29,7 @@ struct cell {
     int y;
     uint64_t distance;
     std::vector<dir_t> dir;
-    cell(int x, int y, uint64_t distance, std::vector<dir_t> prev, dir_t step) : x(x), y(y)
+    cell(int x, int y, uint64_t distance, std::vector<dir_t> prev, dir_t step) : x(x), y(y), distance(distance)
     {
         dir = prev;
         if(dir.size() >= 3)
@@ -67,8 +67,6 @@ std::vector<coordinates_t> get_moves(cell k)
     int dx[] = { -1, 0, 1, 0 };
     int dy[] = { 0, 1, 0, -1 };
 
-    //std::cout << "get_moves [" << k.x << ", " << k.y << " = " << k.distance << "]: " << std::endl;
-
     // looping through all neighbours
     for (int i = 0; i < 4; i++) 
     {
@@ -83,7 +81,6 @@ std::vector<coordinates_t> get_moves(cell k)
         {
             if((abs(k.dir.back() - i) == 2) && k.dir.back() != START)
             {
-                //std::cout << "Previous: " << x << ", " << y << std::endl;
                 continue;
             }
         }
@@ -91,11 +88,9 @@ std::vector<coordinates_t> get_moves(cell k)
         int cnt = std::count(k.dir.begin(), k.dir.end(), (dir_t)i);
         if(cnt == STRAIGHT_LIMIT)
         {
-            //std::cout << "STRAIGHT" << std::endl;
             continue;
         }
 
-        //std::cout << x << ", " << y << std::endl;
         moves.push_back({x, y, (dir_t)i});
     }
 
@@ -105,71 +100,54 @@ std::vector<coordinates_t> get_moves(cell k)
 
 uint64_t Elves::dijkstra()
 {
+    uint64_t heat_loss = UINT64_MAX;
     int row = heat_map.size();
     int col = heat_map[0].size();
-    uint64_t dist[row][col];
-
-    // initializing distance array by INT_MAX
-    for (int i = 0; i < row; i++)
-    {
-        for (int j = 0; j < col; j++)
-        {
-            dist[i][j] = UINT64_MAX;
-        }
-    }
 
     //set
-    std::set<cell> st;
+    std::set<cell> queue;
+    std::set<cell> visited;
 
     //Starting point
     std::vector<dir_t> dir_v;
-    st.insert(cell(0, 0, 0, dir_v, START));
-
-    dist[0][0] = heat_map[0][0];
+    queue.insert(cell(0, 0, 0, dir_v, START));
 
     //dijkstra loop
-    while(!st.empty())
+    while(!queue.empty())
     {
-        cell current_min = *st.begin();
-        st.erase(st.begin());
+        cell current = *queue.begin();
+        queue.erase(queue.begin());
 
-        std::vector<coordinates_t> neighbours = get_moves(current_min);
+        //check if this was already visited
+        std::set<cell>::iterator it = visited.find(current);
+        if(it != visited.end())
+        {
+            continue;
+        }
+
+        if(current.x == row - 1 && current.y == col - 1)
+        {
+            //we reached the end
+            heat_loss = current.distance;
+            goto end;
+        }
+
+        visited.insert(current);
+
+        //get the valid nodes and put them on the queue
+        std::vector<coordinates_t> neighbours = get_moves(current);
         for(auto & n : neighbours)
         {
             if(n.y >= 0 && n.y < row && n.x >= 0 && n.x < col)
             {
-                //check the distance map -> if it is smaller, update
-                if(dist[n.y][n.x] >= dist[current_min.y][current_min.x] + heat_map[n.y][n.x])
-                {
-                    //if there already was a distance / cell, delete it
-                    if(dist[n.y][n.x] != UINT64_MAX)
-                    {
-                        std::set<cell>::iterator it = st.find(cell(n.x, n.y, dist[n.y][n.x], current_min.dir, n.dir));
-                        if(it != st.end())
-                        {
-                            st.erase(it);
-                        }
-                    }
-
-                    //update
-                    dist[n.y][n.x] = dist[current_min.y][current_min.x] + heat_map[n.y][n.x];
-                    st.insert(cell(n.x, n.y, dist[n.y][n.x], current_min.dir, n.dir));
-                }
+                //add the node
+                queue.insert(cell(n.x, n.y, current.distance + heat_map[n.y][n.x], current.dir, n.dir));
             }
         }
     }
 
-    for(int y = 0; y < row; y++)
-    {
-        for(int x = 0; x < col; x++)
-        {
-            std::cout << dist[y][x] << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-
-    return dist[row - 1][col - 1];
+end:
+    return heat_loss;
 }
 
 
