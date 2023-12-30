@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <queue>
 
 #define STRAIGHT_LIMIT 3
 
@@ -16,11 +17,29 @@ enum dir_t {
     START = 4
 };
 
-//coordinates struct
-struct coordinates_t {
+struct pos_t {
     int x;
     int y;
     dir_t dir;
+    int straight;
+
+    // Utility method for comparing two cells
+    bool operator<(const pos_t& other) const
+    {
+        if (x != other.x)
+        {
+            return (x < other.x);
+        }
+        else if(y != other.y)
+        {
+            return (y < other.y);
+        }
+        else
+        {
+            return straight < other.straight;
+        }
+        return false;
+    }
 };
 
 // structure for information of each cell
@@ -28,44 +47,24 @@ struct cell {
     int x;
     int y;
     uint64_t distance;
-    std::vector<dir_t> dir;
-    cell(int x, int y, uint64_t distance, std::vector<dir_t> prev, dir_t step) : x(x), y(y), distance(distance)
-    {
-        dir = prev;
-        if(dir.size() >= 3)
-        {
-            dir.erase(dir.begin());
-        }
-        dir.push_back(step);
-    }
+    dir_t dir;
+    int straight;
+
+    cell(int x, int y, uint64_t distance, dir_t dir, int straight) : x(x), y(y), distance(distance), dir(dir), straight(straight)
+    {}
+
+    bool operator>(const cell& other) const { return distance > other.distance; }
 };
 
-// Utility method for comparing two cells
-bool operator<(const cell& a, const cell& b)
-{
-    if (a.distance == b.distance) 
-    {
-        if (a.x != b.x)
-        {
-            return (a.x < b.x);
-        }
-        else
-        {
-            return (a.y < b.y);
-        }
-    }
-    return (a.distance < b.distance);
-}
-
-
 //disregarding limits
-std::vector<coordinates_t> get_moves(cell k)
+std::vector<cell> get_neighbours(cell k)
 {
-    std::vector<coordinates_t> moves;
+    std::vector<cell> moves;
 
     // direction arrays for simplification of getting neighbour
     int dx[] = { -1, 0, 1, 0 };
     int dy[] = { 0, 1, 0, -1 };
+    int straight = k.straight;
 
     // looping through all neighbours
     for (int i = 0; i < 4; i++) 
@@ -77,23 +76,20 @@ std::vector<coordinates_t> get_moves(cell k)
 
 
         //we don't move the way back we came
-        if(k.dir.size() > 0)
-        {
-            if((abs(k.dir.back() - i) == 2) && k.dir.back() != START)
-            {
-                continue;
-            }
-        }
-
-        int cnt = std::count(k.dir.begin(), k.dir.end(), (dir_t)i);
-        if(cnt == STRAIGHT_LIMIT)
+        if((abs(k.dir - i) == 2) && k.dir != START)
         {
             continue;
         }
 
-        moves.push_back({x, y, (dir_t)i});
-    }
+        //too straight?
+        straight = (dir_t)i == k.dir ? k.straight+1 : 1;
+        if(straight > STRAIGHT_LIMIT)
+        {
+            continue;
+        }
 
+        moves.push_back(cell(x, y, 0, (dir_t)i, straight));
+    }
 
     return moves;
 }
@@ -105,22 +101,25 @@ uint64_t Elves::dijkstra()
     int col = heat_map[0].size();
 
     //set
-    std::set<cell> queue;
-    std::set<cell> visited;
+    std::priority_queue<cell, std::vector<cell>, std::greater<cell>> queue;
+    std::set<pos_t> visited;
 
     //Starting point
-    std::vector<dir_t> dir_v;
-    queue.insert(cell(0, 0, 0, dir_v, START));
+    queue.push(cell(0, 0, 0, START, 0));
 
     //dijkstra loop
     while(!queue.empty())
     {
-        cell current = *queue.begin();
-        queue.erase(queue.begin());
+        cell current = queue.top();
+        queue.pop();
 
         //check if this was already visited
-        std::set<cell>::iterator it = visited.find(current);
+        std::set<pos_t>::iterator it = visited.find({current.x, current.y, current.dir, current.straight});
         if(it != visited.end())
+        {
+            continue;
+        }
+        if(current.distance >= heat_loss)
         {
             continue;
         }
@@ -129,24 +128,23 @@ uint64_t Elves::dijkstra()
         {
             //we reached the end
             heat_loss = current.distance;
-            goto end;
         }
 
-        visited.insert(current);
+        visited.insert({current.x, current.y, current.dir, current.straight});
 
         //get the valid nodes and put them on the queue
-        std::vector<coordinates_t> neighbours = get_moves(current);
+        std::vector<cell> neighbours = get_neighbours(current);
         for(auto & n : neighbours)
         {
             if(n.y >= 0 && n.y < row && n.x >= 0 && n.x < col)
             {
                 //add the node
-                queue.insert(cell(n.x, n.y, current.distance + heat_map[n.y][n.x], current.dir, n.dir));
+                n.distance = current.distance + heat_map[n.y][n.x];
+                queue.push(n);                
             }
         }
     }
 
-end:
     return heat_loss;
 }
 
