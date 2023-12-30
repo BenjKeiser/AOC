@@ -7,10 +7,20 @@
 
 #define STRAIGHT_LIMIT 3
 
+
+enum dir_t {
+    WEST = 0,
+    SOUTH = 1,
+    EAST = 2,
+    NORTH = 3,
+    START = 4
+};
+
 //coordinates struct
 struct coordinates_t {
     int x;
     int y;
+    dir_t dir;
 };
 
 // structure for information of each cell
@@ -18,9 +28,15 @@ struct cell {
     int x;
     int y;
     uint64_t distance;
-    cell * prev;
-    cell(int x, int y, uint64_t distance, cell * prev) : x(x), y(y), distance(distance), prev(prev)
+    std::vector<dir_t> dir;
+    cell(int x, int y, uint64_t distance, std::vector<dir_t> prev, dir_t step) : x(x), y(y)
     {
+        dir = prev;
+        if(dir.size() >= 3)
+        {
+            dir.erase(dir.begin());
+        }
+        dir.push_back(step);
     }
 };
 
@@ -61,44 +77,26 @@ std::vector<coordinates_t> get_moves(cell k)
         int x = k.x + delta_x;
         int y = k.y + delta_y;
 
-        if(k.prev != NULL)
-        {
-            //we don't move the way back we came
-            if(x == k.prev->x && y == k.prev->y)
-            {
-                //std::cout << "Previous: " << x << " == " << k.prev->x << ", " << y << " == " << k.prev->y << std::endl;
-                continue;
-            }
 
-            //check for too long straight line
-            cell previous(x,y,0,&k);
-            bool straight = true;
-            for(int i = 0; i < STRAIGHT_LIMIT; i++)
+        //we don't move the way back we came
+        if(k.dir.size() > 0)
+        {
+            if((abs(k.dir.back() - i) == 2) && k.dir.back() != START)
             {
-                if(previous.prev != NULL)
-                {
-                    if((previous.x != previous.prev->x + delta_x) || (previous.y != previous.prev->y + delta_y))
-                    {
-                        //std::cout << "Not straight " << i << ": " << previous.x << " != " << previous.prev->x + delta_x << " || " << previous.y << " != " << previous.prev->y + delta_y << std::endl;
-                        straight = false;
-                        break;
-                    }
-                    previous = *previous.prev;
-                }
-                else
-                {
-                    straight = false;
-                }
-            }
-            if(straight)
-            {
-                //std::cout << "Straight: " << x << ", " << y << std::endl;
+                //std::cout << "Previous: " << x << ", " << y << std::endl;
                 continue;
             }
         }
 
+        int cnt = std::count(k.dir.begin(), k.dir.end(), (dir_t)i);
+        if(cnt == STRAIGHT_LIMIT)
+        {
+            //std::cout << "STRAIGHT" << std::endl;
+            continue;
+        }
+
         //std::cout << x << ", " << y << std::endl;
-        moves.push_back({x, y});
+        moves.push_back({x, y, (dir_t)i});
     }
 
 
@@ -110,17 +108,13 @@ uint64_t Elves::dijkstra()
     int row = heat_map.size();
     int col = heat_map[0].size();
     uint64_t dist[row][col];
-    std::vector<std::vector<cell>> cell_list;
 
     // initializing distance array by INT_MAX
     for (int i = 0; i < row; i++)
     {
-        std::vector<cell> cells;
-        cell_list.push_back(cells);
         for (int j = 0; j < col; j++)
         {
             dist[i][j] = UINT64_MAX;
-            cell_list[i].push_back(cell(0, 0, 0, NULL));   
         }
     }
 
@@ -128,7 +122,8 @@ uint64_t Elves::dijkstra()
     std::set<cell> st;
 
     //Starting point
-    st.insert(cell(0, 0, 0, NULL));
+    std::vector<dir_t> dir_v;
+    st.insert(cell(0, 0, 0, dir_v, START));
 
     dist[0][0] = heat_map[0][0];
 
@@ -144,56 +139,31 @@ uint64_t Elves::dijkstra()
             if(n.y >= 0 && n.y < row && n.x >= 0 && n.x < col)
             {
                 //check the distance map -> if it is smaller, update
-                if(dist[n.y][n.x] > dist[current_min.y][current_min.x] + heat_map[n.y][n.x])
+                if(dist[n.y][n.x] >= dist[current_min.y][current_min.x] + heat_map[n.y][n.x])
                 {
                     //if there already was a distance / cell, delete it
                     if(dist[n.y][n.x] != UINT64_MAX)
                     {
-                        st.erase(st.find(cell_list[n.y][n.x]));
+                        std::set<cell>::iterator it = st.find(cell(n.x, n.y, dist[n.y][n.x], current_min.dir, n.dir));
+                        if(it != st.end())
+                        {
+                            st.erase(it);
+                        }
                     }
 
                     //update
                     dist[n.y][n.x] = dist[current_min.y][current_min.x] + heat_map[n.y][n.x];
-                    cell update(n.x, n.y, dist[n.y][n.x], &cell_list[current_min.y][current_min.x]);
-                    st.insert(update);
-                    cell_list[n.y][n.x] = update;
+                    st.insert(cell(n.x, n.y, dist[n.y][n.x], current_min.dir, n.dir));
                 }
             }
         }
     }
 
-    bool path[row][col];
-
     for(int y = 0; y < row; y++)
     {
         for(int x = 0; x < col; x++)
         {
-            path[y][x] = false;
-        }
-    }
-
-    cell current = cell_list[row - 1][col - 1];
-    path[row - 1][col - 1] = true;
-    while(current.prev != NULL)
-    {
-        path[current.y][current.x] = true;
-        current = *current.prev;
-    }
-
-
-    for(int y = 0; y < row; y++)
-    {
-        for(int x = 0; x < col; x++)
-        {
-            if(path[y][x])
-            {
-                std::cout << "x";
-            }
-            else
-            {
-                std::cout << heat_map[y][x];
-            }
-            //std::cout << dist[y][x] << " ";
+            std::cout << dist[y][x] << " ";
         }
         std::cout << std::endl;
     }
