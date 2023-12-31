@@ -5,11 +5,34 @@
 #include <iostream>
 #include <sstream>
 
+
+//Part 1: NOTE: Could also be solved with Algo from Part 2 -> way more efficient
 struct pos_t {
     bool dug;
     bool visited;
     std::string colour;
 };
+
+direction_t char_to_dir(char dir)
+{
+    if(dir == 'U')
+    {
+        return U;
+    }
+    if(dir == 'D')
+    {
+        return D;
+    }
+    if(dir == 'R')
+    {
+        return R;
+    }
+    if(dir == 'L')
+    {
+        return L;
+    }
+    return F;
+}
 
 void print_lagoon(std::vector<std::vector<pos_t>> * lag)
 {
@@ -61,19 +84,19 @@ std::pair<std::pair<int,int>, std::pair<int, int>> get_limits(std::vector<dig_t>
 
     for(auto & dig : *dig_orders)
     {
-        if(dig.direction == 'U')
+        if(dig.direction == U)
         {
             position.second -= dig.length;
         }
-        else if(dig.direction == 'R')
+        else if(dig.direction == R)
         {
             position.first += dig.length;
         }
-        else if(dig.direction == 'D')
+        else if(dig.direction == D)
         {
             position.second += dig.length;
         }
-        else if(dig.direction == 'L')
+        else if(dig.direction == L)
         {
             position.first -= dig.length;
         }
@@ -107,10 +130,10 @@ std::pair<std::pair<int,int>, std::pair<int, int>> get_limits(std::vector<dig_t>
     position.first = abs(limits_col.first);
     position.second = abs(limits_row.first);
 
-    std::cout << "ROWS: " << limits_row.first << " -> " << limits_row.second << std::endl;
-    std::cout << "COLS: " << limits_col.first << " -> " << limits_col.second << std::endl;
-    std::cout << "LIMITS: " << limits.first << " -> " << limits.second << std::endl;
-    std::cout << "START: " << position.first << " -> " << position.second << std::endl;
+    //std::cout << "ROWS: " << limits_row.first << " -> " << limits_row.second << std::endl;
+    //std::cout << "COLS: " << limits_col.first << " -> " << limits_col.second << std::endl;
+    //std::cout << "LIMITS: " << limits.first << " -> " << limits.second << std::endl;
+    //std::cout << "START: " << position.first << " -> " << position.second << std::endl;
 
     return {limits, position};
 }
@@ -125,22 +148,22 @@ std::vector<std::vector<pos_t>> dig_trench(std::vector<dig_t> * dig_orders, std:
     lagoon[y][x].dug = true;
     for(auto & dig : *dig_orders)
     {
-        if(dig.direction == 'U')
+        if(dig.direction == U)
         {
             dx = 0;
             dy = -1;
         }
-        else if(dig.direction == 'R')
+        else if(dig.direction == R)
         {
             dx = 1;
             dy = 0;
         }
-        else if(dig.direction == 'D')
+        else if(dig.direction == D)
         {
             dx = 0;
             dy = 1;
         }
-        else if(dig.direction == 'L')
+        else if(dig.direction == L)
         {
             dx = -1;
             dy = 0;
@@ -279,6 +302,120 @@ uint64_t Elves::get_lagoon()
     return hole;
 }
 
+// Part 2 -> Area of Polygon
+/*  https://en.wikipedia.org/wiki/Polygon#Area 
+    https://en.wikipedia.org/wiki/Shoelace_formula 
+    https://en.wikipedia.org/wiki/Pick%27s_theorem */
+
+std::vector<dig_t> translate_dig(std::vector<dig_t> * dig_orders)
+{
+    std::vector<dig_t> orders;
+    dig_t dig;
+    for(auto & d : *dig_orders)
+    {
+        dig.direction = (direction_t)(d.colour[6] - '0');
+        dig.length = std::stoi(d.colour.substr(1, 5), NULL, 16);
+        dig.colour = "";
+        orders.push_back(dig);
+    }
+    return orders;
+}
+
+uint64_t get_corners(std::vector<dig_t> * dig_orders, std::vector<std::pair<int64_t, int64_t>> * corners)
+{
+    std::pair<int64_t, int64_t> limits = {0, 0};
+    std::pair<int64_t, int64_t> position = {0, 0};
+    uint64_t border_points = 0;
+
+    for(auto & dig : *dig_orders)
+    {
+        if(dig.direction == U)
+        {
+            position.second -= dig.length;
+        }
+        else if(dig.direction == R)
+        {
+            position.first += dig.length;
+        }
+        else if(dig.direction == D)
+        {
+            position.second += dig.length;
+        }
+        else if(dig.direction == L)
+        {
+            position.first -= dig.length;
+        }
+        else
+        {
+            std::cout << "Shouldn't get here!" << std::endl;
+            std:exit(-1);
+        }
+
+        border_points += dig.length;
+        corners->push_back(position);
+        //std::cout << position.first << ", " << position.second << std::endl;
+
+        if(position.first < limits.first)
+        {
+            limits.first = position.first;
+        }
+        if(position.second < limits.second)
+        {
+            limits.second = position.second;
+        }
+    }
+
+    for(auto & p: *corners)
+    {
+        p.first += abs(limits.first);
+        p.second += abs(limits.second);
+        //std::cout << p.first << ", " << p.second << std::endl;
+    }
+
+    return border_points;
+}
+
+int64_t get_area(std::vector<std::pair<int64_t, int64_t>> * c)
+{
+    int64_t area = 0;
+    int64_t a = 0;
+    std::vector<std::pair<int64_t, int64_t>> corners = *c;
+    std::pair<int64_t, int64_t> x0;
+    std::pair<int64_t, int64_t> x1;
+
+    x0 = corners.back();
+    corners.pop_back();
+    corners.insert(corners.begin(), x0);
+
+    while(!corners.empty())
+    {
+        x1 = corners.back();
+        corners.pop_back();
+        a = ((x0.first - x1.first) * (x0.second + x1.second)) / 2;
+        area += a;
+        //std::cout << "A " << a << "[" << area << "] = (" << x0.first << " - " << x1.first << ") * (" << x0.second << " + " << x1.second << ") / 2" << std::endl;
+        x0 = x1;
+    }
+    return llabs(area);
+}
+
+uint64_t Elves::get_lagoon_colour()
+{
+    uint64_t hole = 0;
+    std::vector<dig_t> colour_orders = translate_dig(&dig_orders);
+    std::vector<std::pair<int64_t, int64_t>> corners;
+    uint64_t border_points = get_corners(&colour_orders, &corners);
+
+    //std::cout << "BP: " << border_points << std::endl;
+
+    hole = get_area(&corners);
+
+    //with picks we can calculate the sum of interior + border points which is what we want in this exercise
+    hole = hole + border_points / 2 + 1;
+
+    return hole;
+}
+
 Elves::Elves(char * file_name)
 {
     std::ifstream file(file_name);
@@ -293,12 +430,10 @@ Elves::Elves(char * file_name)
         {
             if(line.length() > 0)
             {
-                dig_order.direction=line[0];
+                dig_order.direction= char_to_dir(line[0]);
                 dig_order.length=std::stoi(line.substr(2));
                 int pos = line.find('#');
                 dig_order.colour = line.substr(pos, 7);
-
-                std::cout << dig_order.direction << " " << dig_order.length << " (" << dig_order.colour << ")" << std::endl;
 
                 dig_orders.push_back(dig_order);
             }

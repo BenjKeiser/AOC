@@ -5,8 +5,16 @@
 #include <string>
 #include <utility>
 
+enum direction_t {
+    R=0,
+    D=1,
+    L=2,
+    U=3,
+    F=4
+};
+
 struct dig_t {
-    char direction;
+    direction_t direction;
     int length;
     std::string colour;
 };
@@ -18,6 +26,7 @@ class Elves {
     public:
         Elves(char * file_name);
         uint64_t get_lagoon();
+        uint64_t get_lagoon_colour();
 
 };
 
