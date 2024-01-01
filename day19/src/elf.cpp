@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <set>
 
 //part 1
 void Elves::run_filter(part_t * part, std::string filter)
@@ -89,209 +90,280 @@ uint64_t Elves::get_parts()
 }
 
 //part 2
-limits_t get_limits(limits_t l1, limits_t l2)
+enum val_t {
+    X = 0,
+    M = 1,
+    A = 2,
+    S = 3,
+    UNKNOWN = 99
+};
+
+struct range_t {
+    int start;
+    int end;
+
+    bool const operator<(const range_t &r) const {
+        if(start != r.start)
+        {
+            return start < r.start;
+        }
+        return end < r.end;
+    }
+};
+
+struct ranges_t {
+    range_t ranges[4];
+
+    uint64_t get_combs()
+    {
+        uint64_t combs = 1;
+        for(int i = 0; i < 4; i++)
+        {
+            combs *= (ranges[i].end - ranges[i].start + 1);
+        }
+        return combs;
+    }
+};
+
+struct node_t {
+    std::string id;
+    std::vector<node_t> next;
+    ranges_t ranges;
+};
+
+struct steps_t {
+    val_t id;
+    char op;
+    int val;
+};
+
+struct next_t {
+    std::string id;
+    std::vector<steps_t> steps;
+};
+
+void print_ranges(ranges_t & ranges)
 {
-    limits_t limits;
+    for(int i = 0; i < 4; i++)
+    {
+        std::cout << "R" << i << ": " << "{" << ranges.ranges[i].start << ", " << ranges.ranges[i].end << "}" << std::endl;
 
-    limits.x_min = std::max(l1.x_min, l2.x_min);
-    limits.x_max = std::min(l1.x_max, l2.x_max);
-
-    limits.m_min = std::max(l1.m_min, l2.m_min);
-    limits.m_max = std::min(l1.m_max, l2.m_max);
-    
-    limits.a_min = std::max(l1.a_min, l2.a_min);
-    limits.a_max = std::min(l1.a_max, l2.a_max);
-    
-    limits.s_min = std::max(l1.s_min, l2.s_min);
-    limits.s_max = std::min(l1.s_max, l2.s_max);
-
-    return limits;
+    }
+    std::cout << std::endl;
 }
 
-std::pair<bool, limits_t> Elves::check_filter(limits_t limits, std::string filter)
+val_t char_to_val(char c)
 {
-    filter_t current = filters[filter];
-
-    limits_t lim = limits;
-    limits_t lim_next = lim;
-
-    bool result = false;
-    bool br = false;
-
-    if(filter == "A")
+    val_t v = UNKNOWN;
+    if(c == 'x')
     {
-        return {true, limits};
+        v = X; 
     }
-    else if(filter == "R")
+    else if (c == 'm')
     {
-        return {false, limits};
+        v = M;
+    }
+    else if (c == 'a')
+    {
+        v = A;
+    }
+    else if (c == 's')
+    {
+        v = S;
     }
     else
     {
-        int val = 0;
+        v = UNKNOWN;
+    }
+    
+    return v;
+};
 
-        std::string fun = current.def;
+void swap_rule(char * op, int * val)
+{
+    if(*op == '<')
+    {
+        *op = '>';
+        *val -= 1;
+    }
+    else
+    {
+        *op = '<';
+        *val += 1;
+    }
+}
 
-        for(auto & f : current.rules)
+bool apply_rule_to_range(steps_t step, ranges_t & ranges)
+{
+    bool accept = true;
+    
+    //std::cout << (int)step.id << step.op << step.val << std::endl;
+    //std::cout << ranges.ranges[step.id].start << ", " << ranges.ranges[step.id].end << " -> " << step.val << std::endl;
+
+    if(ranges.ranges[step.id].start <= step.val && ranges.ranges[step.id].end >= step.val)
+    {
+        // step is within range -> we split at the desired point
+        if(step.op == '>')
         {
-            //todo: Set lim_next
-            if(f.op == '>')
-            {
-                if(f.id == 'x')
-                {
-                    if(lim.x_min <= f.val)
-                    {
-                        lim.x_min = f.val + 1;
-                    }
-                    else
-                    {
-                        //we will always end up here... stop after evaluating
-                        br = true;
-                    }
-                    lim_next.x_max = std::min(f.val, lim.x_max);
-                }
-                else if(f.id == 'm')
-                {
-                    if(lim.m_min <= f.val)
-                    {
-                        lim.m_min = f.val + 1;
-                    }
-                    else
-                    {
-                        //we will always end up here... stop after evaluating
-                        br = true;
-                    }
-                    lim_next.m_max = std::min(f.val, lim.m_max);
-                }
-                else if(f.id == 'a')
-                {
-                    if(lim.a_min <= f.val)
-                    {
-                        lim.a_min = f.val + 1;
-                    }
-                    else
-                    {
-                        //we will always end up here... stop after evaluating
-                        br = true;
-                    }
-                    lim_next.a_max = std::min(f.val, lim.a_max);
-                }
-                else if(f.id == 's')
-                {
-                    if(lim.s_min <= f.val)
-                    {
-                        lim.s_min = f.val + 1;
-                    }
-                    else
-                    {
-                        //we will always end up here... stop after evaluating
-                        br = true;
-                    }
-                    lim_next.s_max = std::min(f.val, lim.s_max);
-                }
-            }
-            else if(f.op == '<')
-            {
-                if(f.id == 'x')
-                {
-                    if(lim.x_max >= f.val)
-                    {
-                        lim.x_max = f.val - 1;
-                    }
-                    else
-                    {
-                        //we will always end up here... stop after evaluating
-                        br = true;
-                    }
-                    lim_next.x_min = std::max(f.val, lim.x_min);
-                }
-                else if(f.id == 'm')
-                {
-                    if(lim.m_max >= f.val)
-                    {
-                        lim.m_max = f.val - 1;
-                    }
-                    else
-                    {
-                        //we will always end up here... stop after evaluating
-                        br = true;
-                    }
-                    lim_next.m_min = std::max(f.val, lim.m_min);
-                }
-                else if(f.id == 'a')
-                {
-                    if(lim.a_max >= f.val)
-                    {
-                        lim.a_max = f.val - 1;
-                    }
-                    else
-                    {
-                        //we will always end up here... stop after evaluating
-                        br = true;
-                    }
-                    lim_next.a_min = std::max(f.val, lim.a_min);
-                }
-                else if(f.id == 's')
-                {
-                    if(lim.s_max >= f.val)
-                    {
-                        lim.s_max = f.val - 1;
-                    }
-                    else
-                    {
-                        //we will always end up here... stop after evaluating
-                        br = true;
-                    }
-                    lim_next.s_min = std::max(f.val, lim.s_min);
-                }
-                
-            }
-            auto [r, l] = check_filter(lim, f.go);
-            if(r)
-            {
-                limits = get_limits(l, limits);
-                result = true;
-                br = true;
-            }
-            // we need to ensure that the function is reached (they are executed sequentially)
-            lim = lim_next;
-            
-            if(br)
-            {
-                //we've evaluated a node where we cannot go further
-                break;
-            }
+            ranges.ranges[step.id].start = step.val + 1;
         }
-
-        if(!br)
+        else
         {
-            //with these limits we will enter the default case
-            auto [r, l] = check_filter(lim, current.def);
-            if(r)
-            {
-                limits = get_limits(l, limits);
-                result = true;
-            }    
+            ranges.ranges[step.id].end = step.val - 1;
         }
     }
-    return {result, limits};
+    else if(ranges.ranges[step.id].end <= step.val)
+    {
+        // full range is below step
+        if(step.op == '>')
+        {
+            ranges.ranges[step.id].start = 0;
+            ranges.ranges[step.id].end = 0;
+            accept = false;
+        }
+        else
+        {
+            //nothing
+        }
+    }
+    else if(ranges.ranges[step.id].start >= step.val)
+    {
+        // full range is above step
+        if(step.op == '>')
+        {
+            //nothing
+        }
+        else
+        {
+            ranges.ranges[step.id].start = 0;
+            ranges.ranges[step.id].end = 0;
+            accept = false;
+        }
+    }
+    else
+    {
+        std::cout << "Did not expect to get here! " << std::endl;
+        std::exit(-1);
+    }
+    return accept;
+}
+
+std::vector<node_t> get_next_nodes(filter_t cf, ranges_t rs)
+{
+    std::vector<node_t> nodes;
+    std::vector<next_t> calc;
+
+    std::vector<steps_t> next_steps;
+
+    for(auto & f : cf.rules)
+    {
+        next_t current;
+        steps_t s;
+        
+        current.steps.insert(current.steps.end(), next_steps.begin(), next_steps.end());
+        current.id = f.go;
+
+        s.op = f.op;
+        s.id = char_to_val(f.id);
+        s.val = f.val;
+
+        current.steps.push_back(s);
+
+        //we need to store the requirement to pass over this step in order to reach the next step
+        swap_rule(&s.op, &s.val);
+        next_steps.push_back(s);
+
+        calc.push_back(current);
+    }
+
+    //add the default node -> needs to not fulfill any of the previous requirements
+    next_t def;
+    def.id = cf.def;
+    def.steps.insert(def.steps.end(), next_steps.begin(), next_steps.end());
+    calc.push_back(def);
+
+    //we collected all the rules, time to do some ranges magic
+    for(auto & c : calc)
+    {
+        node_t current;
+        ranges_t ro = rs;
+        bool accept = true;
+
+        current.id = c.id;
+        for(auto & r : c.steps)
+        {
+            //apply rule to range
+            accept = apply_rule_to_range(r, ro);
+            if(!accept)
+            {
+                std::cout << "Here is an issue" << std::endl;
+                std::exit(-1);
+            }
+        }
+        current.ranges = ro;
+        nodes.push_back(current);
+    }
+
+    return nodes;
 }
 
 uint64_t Elves::get_combinations()
 {
     uint64_t comb = 0;
-    limits_t limits = {0, 4000, 0, 4000, 0, 4000, 0, 4000};
 
-    auto [res, l] = check_filter(limits, "in");
+    std::vector<node_t> queue;
+    filter_t cf;
 
-    if(res)
+    //initialize start ranges
+    ranges_t ranges;
+    ranges.ranges[0] = {1, 4000};
+    ranges.ranges[1] = {1, 4000};
+    ranges.ranges[2] = {1, 4000};
+    ranges.ranges[3] = {1, 4000};
+
+    //initialize start node
+    node_t current;
+    current.id = "in";
+    current.ranges = ranges;
+
+    queue.push_back(current);
+    int i = 0;
+    while(!queue.empty())
     {
-        l.print();
-        comb = (uint64_t)(l.x_max - l.x_min) * (uint64_t)(l.m_max - l.m_min) * (uint64_t)(l.a_max - l.a_min) * (uint64_t)(l.s_max - l.s_min);
-    } 
-    else
-    {
-        std::cout << "Huh...." << std::endl;
+        current = queue.front();
+        queue.erase(queue.begin());
+
+        //std::cout << "Visiting Node: " << current.id << std::endl;
+
+        cf = filters[current.id];
+
+        current.next = get_next_nodes(cf, current.ranges);
+
+        //std::cout << "Next Node: " << std::endl;;
+        for(auto & n : current.next)
+        {
+            if(n.id == "A")
+            {
+                //std::cout << "Adding Range:" << std::endl;
+                //print_ranges(n.ranges);
+                comb += n.ranges.get_combs();
+            }
+            else if(n.id == "R")
+            {
+
+            }
+            else
+            {
+                //std::cout << n.id << std::endl;
+                //print_ranges(n.ranges);
+                queue.push_back(n);
+            } 
+        }
+        i++;
+        if(i > 5)
+        {
+            //break;
+        }
     }
 
     return comb;
