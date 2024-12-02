@@ -44,41 +44,66 @@ fn check_val(v1: i32, v2: i32) -> i32 {
     ret
 }
 
-fn analyze_record(record: &Vec<i32>) -> i32 {
+fn analyze_record(record: &Vec<i32>, mut cnt: i32) -> i32 {
     let mut ret = 1;
-    let mut old_val = record[0];
+    let mut pos = 0;
     
     let dir = get_dir(record[0], record[1]);
     if dir == 0
     {
-        return dir;
-    } 
+        ret = 0;
+    }
 
-    for v in record.iter().skip(1)
+    for v in 1..record.len()
     {
-        let val = *v;
+        let val = record[v];
+        let prev_val = record[v-1];
         
         if dir > 0
         {
-            ret = check_val(val, old_val);
+            ret = check_val(val, prev_val);
         }
         else if dir < 0 
         {
-            ret = check_val(old_val, val);
+            ret = check_val(prev_val, val);
         }
 
         if ret == 0
         {
+            pos = v;
             break;
         }
-
-        old_val = val;
     }
+
+    if (ret == 0) && (cnt < 1)
+    {
+        cnt += 1;
+        let mut r = record.to_vec();
+        r.remove(pos);
+        ret = analyze_record(&r, cnt);
+
+        if pos >= 1 && ret == 0
+        {
+            r = record.to_vec();
+            r.remove(pos-1);
+            ret = analyze_record(&r, cnt);
+        }
+
+        if pos == 2 && ret == 0
+        {
+            //special case if initial direction issue
+            r = record.to_vec();
+            r.remove(pos-2);
+            ret = analyze_record(&r, cnt);
+        }
+    }
+
     ret
 }
 
 fn parse() -> Result<(), Box<dyn Error>> {
-    let mut sum = 0;
+    let mut sum1 = 0;
+    let mut sum2 = 0;
     let mut rec: Vec<i32> = Vec::new();
 
     let file_path = get_first_arg()?;
@@ -97,10 +122,12 @@ fn parse() -> Result<(), Box<dyn Error>> {
         {
             rec.push(v.parse::<i32>().unwrap())
         }
-        sum += analyze_record(&rec);
+        sum1 += analyze_record(&rec, 1);
+        sum2 += analyze_record(&rec, 0);
         rec.clear();
     }
-    println!("{:?}", sum);
+    println!("p1:{:?}", sum1);
+    println!("p2:{:?}", sum2);
     Ok(())
 }
 
