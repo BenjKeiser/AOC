@@ -77,6 +77,7 @@ fn analyze_record(record: &Vec<i32>, mut cnt: i32) -> i32 {
 
     if (ret == 0) && (cnt < 1)
     {
+        //println!("{:?}", record);
         cnt += 1;
         let mut r = record.to_vec();
         r.remove(pos);
