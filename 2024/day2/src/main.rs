@@ -14,88 +14,75 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-fn analyze_record(record: &csv::StringRecord) -> i32 {
-    let mut ret = 1;
-    let mut dir = 0; // 0: undef; -1: decreasing; 1: increasing
-    let mut old_val = 0;
-    let mut cnt = 0;
-    for v in record.iter()
+// 0: undef; -1: decreasing; 1: increasing
+fn get_dir(v1: i32, v2: i32) -> i32 {
+    let mut dir = 0;
+    if v2 < v1
     {
-        let val = v.parse::<i32>().unwrap();
+        dir = -1;
+    }
+    else if v2 > v1
+    {
+        dir = 1;
+    }
+    dir
+}
 
-        if dir == 0
+fn check_val(v1: i32, v2: i32) -> i32 {
+    let mut ret = 1;
+    let diff = (v2 - v1).abs();
+    
+    if (diff < 1) || (diff > 3)
+    {
+        ret = 0;
+    }
+    if v2 > v1
+    {
+        ret = 0;              
+    }
+
+    ret
+}
+
+fn analyze_record(record: &Vec<i32>) -> i32 {
+    let mut ret = 1;
+    let mut old_val = record[0];
+    
+    let dir = get_dir(record[0], record[1]);
+    if dir == 0
+    {
+        return dir;
+    } 
+
+    for v in record.iter().skip(1)
+    {
+        let val = *v;
+        
+        if dir > 0
         {
-            if cnt != 0
-            {
-                let diff = (val - old_val).abs();
-                if diff < 1
-                {
-                    ret = 0;
-                    break;   
-                }
-
-                if diff > 3
-                {
-                    ret = 0;
-                    break;   
-                }
-                
-                if val < old_val
-                {
-                    dir = -1;
-                }
-                else if val > old_val
-                {
-                    dir = 1;
-                }
-                else
-                {
-                    ret = 0;
-                    break;
-                }
-            }
+            ret = check_val(val, old_val);
         }
-        else
+        else if dir < 0 
         {
-            let diff = (val - old_val).abs();
-            if diff < 1
-            {
-                ret = 0;
-                break;   
-            }
-
-            if diff > 3
-            {
-                ret = 0;
-                break;   
-            }
-
-            if dir < 0
-            {
-                if val > old_val
-                {
-                    ret = 0;
-                    break;                    
-                }
-            }
-            if dir > 0 
-            {
-                if val < old_val
-                {
-                    ret = 0;
-                    break;                    
-                }
-            }
+            ret = check_val(old_val, val);
         }
+
+        if ret == 0
+        {
+            break;
+        }
+
         old_val = val;
-        cnt += 1;
     }
     ret
 }
 
 fn parse() -> Result<(), Box<dyn Error>> {
     let mut sum = 0;
+    let mut rec: Vec<i32> = Vec::new();
+
     let file_path = get_first_arg()?;
+
     let mut rdr = ReaderBuilder::new()
         .has_headers(false)
         .delimiter(b' ')
@@ -103,9 +90,15 @@ fn parse() -> Result<(), Box<dyn Error>> {
         .from_path(file_path)?;
 
     // Loop over each record.
-    for result in rdr.records() {
+    for result in rdr.records() 
+    {
         let record = result?;
-        sum += analyze_record(&record);
+        for v in record.iter()
+        {
+            rec.push(v.parse::<i32>().unwrap())
+        }
+        sum += analyze_record(&rec);
+        rec.clear();
     }
     println!("{:?}", sum);
     Ok(())
