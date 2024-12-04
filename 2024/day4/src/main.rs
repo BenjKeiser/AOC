@@ -1,9 +1,9 @@
-use std::fs;
-use std::fmt;
+use std::collections::VecDeque;
+use std::env;
 use std::error::Error;
 use std::ffi::OsString;
-use std::env;
-use std::collections::VecDeque;
+use std::fmt;
+use std::fs;
 use std::slice::Iter;
 
 pub struct Direction {
@@ -13,14 +13,16 @@ pub struct Direction {
 
 impl Direction {
     pub fn iterator() -> Iter<'static, Direction> {
-        static DIRECTIONS: [Direction; 8] = [Direction { x: -1, y: -1}, 
-                                             Direction { x: 0, y: -1}, 
-                                             Direction { x: 1, y: -1}, 
-                                             Direction { x: 1, y: 0}, 
-                                             Direction { x: 1, y: 1}, 
-                                             Direction { x: 0, y: 1}, 
-                                             Direction { x: -1, y: 1}, 
-                                             Direction { x: -1, y: 0}];
+        static DIRECTIONS: [Direction; 8] = [
+            Direction { x: -1, y: -1 },
+            Direction { x: 0, y: -1 },
+            Direction { x: 1, y: -1 },
+            Direction { x: 1, y: 0 },
+            Direction { x: 1, y: 1 },
+            Direction { x: 0, y: 1 },
+            Direction { x: -1, y: 1 },
+            Direction { x: -1, y: 0 },
+        ];
         DIRECTIONS.iter()
     }
 }
@@ -38,7 +40,13 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-fn find_next_char(c_list: &VecDeque<char>, map: &Vec<Vec<char>>, x: usize, y: usize, dir: &Direction) -> bool {
+fn find_next_char(
+    c_list: &VecDeque<char>,
+    map: &Vec<Vec<char>>,
+    x: usize,
+    y: usize,
+    dir: &Direction,
+) -> bool {
     let mut ret = false;
     if c_list.len() != 0 {
         let c = c_list[0];
@@ -56,9 +64,8 @@ fn find_next_char(c_list: &VecDeque<char>, map: &Vec<Vec<char>>, x: usize, y: us
                     ret = find_next_char(&next, map, x_coord, y_coord, dir);
                 }
             }
-        }  
-    }
-    else {
+        }
+    } else {
         ret = true;
     }
 
@@ -69,11 +76,16 @@ fn find_words(word: &str, map: &Vec<Vec<char>>) -> i32 {
     let mut w_vec: VecDeque<char> = word.chars().collect();
     let mut sum = 0;
     let c = w_vec[0];
-    
+
     w_vec.pop_front();
     //find_next_char(&w_vec, map, 5, 0, &Direction {x: 1, y: 0});
     for i in 0..map.len() {
-        for pos in map[i].iter().enumerate().filter(|(_, x)| **x == c).map(|(idx, _)| idx) {
+        for pos in map[i]
+            .iter()
+            .enumerate()
+            .filter(|(_, x)| **x == c)
+            .map(|(idx, _)| idx)
+        {
             for dir in Direction::iterator() {
                 if find_next_char(&w_vec, map, pos, i, dir) {
                     sum += 1;
@@ -87,15 +99,17 @@ fn find_words(word: &str, map: &Vec<Vec<char>>) -> i32 {
 fn find_x_mas(map: &Vec<Vec<char>>) -> i32 {
     let mut sum = 0;
     //find_next_char(&w_vec, map, 5, 0, &Direction {x: 1, y: 0});
-    for y in 1..map.len()-1 {
-        for x in 1..map[y].len()-1 {
+    for y in 1..map.len() - 1 {
+        for x in 1..map[y].len() - 1 {
             if map[y][x] == 'A' {
-                if (map[y-1][x-1] == 'S' && map[y+1][x+1] == 'M') ||
-                   (map[y-1][x-1] == 'M' && map[y+1][x+1] == 'S') {
-                    if (map[y-1][x+1] == 'S' && map[y+1][x-1] == 'M') ||
-                       (map[y-1][x+1] == 'M' && map[y+1][x-1] == 'S') {
+                if (map[y - 1][x - 1] == 'S' && map[y + 1][x + 1] == 'M')
+                    || (map[y - 1][x - 1] == 'M' && map[y + 1][x + 1] == 'S')
+                {
+                    if (map[y - 1][x + 1] == 'S' && map[y + 1][x - 1] == 'M')
+                        || (map[y - 1][x + 1] == 'M' && map[y + 1][x - 1] == 'S')
+                    {
                         sum += 1;
-                   }
+                    }
                 }
             }
         }
@@ -106,7 +120,7 @@ fn find_x_mas(map: &Vec<Vec<char>>) -> i32 {
 fn main() -> Result<(), Box<dyn Error>> {
     let file_path = get_first_arg()?;
     let mut word_map: Vec<Vec<char>> = Vec::new();
-    for line in fs::read_to_string(file_path)?.lines(){
+    for line in fs::read_to_string(file_path)?.lines() {
         let char_vec: Vec<char> = line.chars().collect();
         word_map.push(char_vec);
     }
