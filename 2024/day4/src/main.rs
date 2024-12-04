@@ -70,7 +70,6 @@ fn find_words(word: &str, map: &Vec<Vec<char>>) -> i32 {
     let mut sum = 0;
     let c = w_vec[0];
     
-
     w_vec.pop_front();
     //find_next_char(&w_vec, map, 5, 0, &Direction {x: 1, y: 0});
     for i in 0..map.len() {
@@ -78,6 +77,25 @@ fn find_words(word: &str, map: &Vec<Vec<char>>) -> i32 {
             for dir in Direction::iterator() {
                 if find_next_char(&w_vec, map, pos, i, dir) {
                     sum += 1;
+                }
+            }
+        }
+    }
+    sum
+}
+
+fn find_x_mas(map: &Vec<Vec<char>>) -> i32 {
+    let mut sum = 0;
+    //find_next_char(&w_vec, map, 5, 0, &Direction {x: 1, y: 0});
+    for y in 1..map.len()-1 {
+        for x in 1..map[y].len()-1 {
+            if map[y][x] == 'A' {
+                if (map[y-1][x-1] == 'S' && map[y+1][x+1] == 'M') ||
+                   (map[y-1][x-1] == 'M' && map[y+1][x+1] == 'S') {
+                    if (map[y-1][x+1] == 'S' && map[y+1][x-1] == 'M') ||
+                       (map[y-1][x+1] == 'M' && map[y+1][x-1] == 'S') {
+                        sum += 1;
+                   }
                 }
             }
         }
@@ -94,5 +112,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let words = find_words("XMAS", &word_map);
     println!("part1: {words}");
+    let x_mas = find_x_mas(&word_map);
+    println!("part2: {x_mas}");
     Ok(())
 }
