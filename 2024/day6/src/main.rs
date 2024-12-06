@@ -85,18 +85,28 @@ fn check_loop(
 ) -> bool {
     let mut y = cur_y + dir.y;
     let mut x = cur_x + dir.x;
+    let mut visited: Vec<Vec<bool>> = vec![vec![false; map.len()]; map[0].len()];
 
     //check if a block could be placed
     if y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
         //obstacle could be placed, we turn
-        if let Some(t_dir) = turn_right(dir) {
+        if let Some(mut t_dir) = turn_right(dir) {
             //check if in this direction a location was already visited in the same direction
             y = cur_y + t_dir.y;
             x = cur_x + t_dir.x;
-            
+
             //println!("first step: {y},{x} -> {t_dir}");
+
+            //exit condition is we run out of the map or reach in internal loop
             while y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
-                if map[y as usize][x as usize] != '#' {
+                //we have already visited here so we have looped and did not find a direction match -> abort
+                if visited[y as usize][x as usize] {
+                    return false;
+                }
+
+                visited[y as usize][x as usize] = true;
+
+                if map[y as usize][x as usize] != '#' {             
                     if vis[y as usize][x as usize] == 1 {
                         //println!("Visited: {y},{x} -> {t_dir}");
                         //location was visited -> check if the direction matches
@@ -107,12 +117,18 @@ fn check_loop(
                             }
                         }
                     }
-                }
-                else {
-                    break;
+                } else {
+                    //we ran into a block -> take a step back then turn
+                    //println!("turn right");
+                    y = y - t_dir.y;
+                    x = x - t_dir.x;
+                    if let Some(td) = turn_right(t_dir) {
+                        t_dir = td;
+                    }
                 }
                 y = y + t_dir.y;
                 x = x + t_dir.x;
+                //println!("next step: {y},{x} -> {t_dir}");
             }
         }
     }
