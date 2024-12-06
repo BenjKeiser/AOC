@@ -77,36 +77,44 @@ fn get_next(
 }
 
 fn check_loop(
-    map: &Vec<Vec<char>>,
+    map_orig: &Vec<Vec<char>>,
     v_map: &Vec<Vec<Vec<bool>>>,
     (cur_y, cur_x): (i32, i32),
     dir: Direction,
 ) -> bool {
     let mut y = cur_y + dir.y;
     let mut x = cur_x + dir.x;
+    let mut map = map_orig.clone();
     let mut visited: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; 4]; map[0].len()]; map.len()];
+
+    if let Some(dir_pos) = get_dir_pos(dir) {
+        visited[cur_y as usize][cur_x as usize][dir_pos] = true;
+    }
 
     //check if a block could be placed
     if y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
+        if map[y as usize][x as usize] == '#' {
+            //there already is a block, we can abort
+            return false;
+        }
+        //we place the block as it might change paths
+        map[y as usize][x as usize] = '#';
+
         //obstacle could be placed, we turn
         if let Some(mut t_dir) = turn_right(dir) {
             //check if in this direction a location was already visited in the same direction
-            y = cur_y + t_dir.y;
-            x = cur_x + t_dir.x;
-
-            //println!("first step: {y},{x} -> {t_dir}");
-
             //exit condition is we run out of the map or reach in internal loop
+            y = y + t_dir.y;
+            x = x + t_dir.x;
             while y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
-                //we have already visited here so we have looped and did not find a direction match -> abort
-                if let Some(dir_pos) = get_dir_pos(t_dir) {
-                    if visited[y as usize][x as usize][dir_pos] {
-                        return false;
-                    }
-                    visited[y as usize][x as usize][dir_pos] = true;
-                }
-
                 if map[y as usize][x as usize] != '#' {
+                    //we have already visited here so we have looped and did not find a direction match -> abort
+                    if let Some(dir_pos) = get_dir_pos(t_dir) {
+                        if visited[y as usize][x as usize][dir_pos] {
+                            return false;
+                        }
+                        visited[y as usize][x as usize][dir_pos] = true;
+                    }
                     //println!("Visited: {y},{x} -> {t_dir}");
                     //location was visited -> check if the direction matches
                     if let Some(dir_pos) = get_dir_pos(t_dir) {
@@ -191,7 +199,7 @@ fn get_visited(map: &Vec<Vec<char>>) -> (i32, usize) {
         }
     }
 
-    println!("{:?}", vis);
+    //println!("{:?}", vis);
 
     for i in 0..vis.len() {
         let s: u8 = vis[i].iter().sum();
