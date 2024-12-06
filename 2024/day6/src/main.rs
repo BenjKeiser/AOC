@@ -141,7 +141,7 @@ fn get_visited(map: &Vec<Vec<char>>) -> (i32, usize) {
 
     //maps which directions have been visited
     let mut v_map: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; 4]; map.len()]; map[0].len()];
-    let mut block_locations: Vec<(i32, i32)> = Vec::new();
+    let mut block_locations: Vec<(i32, i32, Direction)> = Vec::new();
 
     //Find Start position
     for i in 0..map.len() {
@@ -169,9 +169,9 @@ fn get_visited(map: &Vec<Vec<char>>) -> (i32, usize) {
                             //loop is potentially possible -> check if it is unique
                             let y_block = y + dir.y;
                             let x_block = x + dir.x;
-                            if !block_locations.contains(&(y_block, x_block)) {
+                            if !block_locations.contains(&(y_block, x_block, dir)) {
                                 //unique -> add it
-                                block_locations.push((y_block, x_block));
+                                block_locations.push((y_block, x_block, dir));
                                 //println!("Block: {y_block}, {x_block} -> {dir}");
                             }
                         }
