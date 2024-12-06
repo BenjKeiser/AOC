@@ -4,7 +4,7 @@ use std::ffi::OsString;
 use std::fmt;
 use std::fs;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Direction {
     x: i32,
     y: i32,
@@ -16,6 +16,13 @@ impl fmt::Display for Direction {
     }
 }
 
+static DIRECTIONS: &'static [Direction] = &[
+    Direction { x: 0, y: -1 },
+    Direction { x: 1, y: 0 },
+    Direction { x: 0, y: 1 },
+    Direction { x: -1, y: 0 },
+];
+
 fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     match env::args_os().nth(1) {
         None => Err(From::from("expected 1 argument, but got none")),
@@ -23,21 +30,18 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-fn turn_right(dir: Direction) -> Option<Direction> {
-    let dirs = [
-        Direction { x: 0, y: -1 },
-        Direction { x: 1, y: 0 },
-        Direction { x: 0, y: 1 },
-        Direction { x: -1, y: 0 },
-    ];
+fn get_dir_pos(dir: Direction) -> Option<usize> {
+    DIRECTIONS.iter().position(|x| x.y == dir.y && x.x == dir.x)
+}
 
-    if let Some(mut pos) = dirs.iter().position(|x| x.y == dir.y && x.x == dir.x) {
-        if pos < dirs.len() - 1 {
+fn turn_right(dir: Direction) -> Option<Direction> {
+    if let Some(mut pos) = get_dir_pos(dir) {
+        if pos < DIRECTIONS.len() - 1 {
             pos += 1;
         } else {
             pos = 0;
         }
-        return Some(dirs[pos]);
+        return Some(DIRECTIONS[pos]);
     }
     None
 }
@@ -52,7 +56,7 @@ fn get_next(
     let y = cur_y + direction.y;
     let x = cur_x + direction.x;
 
-    if y >= 0 && y < map.len() as i32 && x >= 0 && y <= map[0].len() as i32 {
+    if y >= 0 && y < map.len() as i32 && x >= 0 && x < map[0].len() as i32 {
         if map[y as usize][x as usize] == '.' || map[y as usize][x as usize] == '^' {
             return Some(((y, x), direction));
         } else if map[y as usize][x as usize] == '#' {
@@ -72,9 +76,56 @@ fn get_next(
     None
 }
 
-fn get_visited(map: &Vec<Vec<char>>) -> i32 {
+fn check_loop(
+    map: &Vec<Vec<char>>,
+    v_map: &Vec<Vec<Vec<bool>>>,
+    vis: &Vec<Vec<u8>>,
+    (cur_y, cur_x): (i32, i32),
+    dir: Direction,
+) -> bool {
+    let mut y = cur_y + dir.y;
+    let mut x = cur_x + dir.x;
+
+    //check if a block could be placed
+    if y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
+        //obstacle could be placed, we turn
+        if let Some(t_dir) = turn_right(dir) {
+            //check if in this direction a location was already visited in the same direction
+            y = cur_y + t_dir.y;
+            x = cur_x + t_dir.x;
+            
+            //println!("first step: {y},{x} -> {t_dir}");
+            while y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
+                if map[y as usize][x as usize] != '#' {
+                    if vis[y as usize][x as usize] == 1 {
+                        //println!("Visited: {y},{x} -> {t_dir}");
+                        //location was visited -> check if the direction matches
+                        if let Some(dir_pos) = get_dir_pos(t_dir) {
+                            //println!("Check Pos: {dir_pos}:{t_dir}");
+                            if v_map[y as usize][x as usize][dir_pos] {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else {
+                    break;
+                }
+                y = y + t_dir.y;
+                x = x + t_dir.x;
+            }
+        }
+    }
+    false
+}
+
+fn get_visited(map: &Vec<Vec<char>>) -> (i32, usize) {
     let mut visited = 0;
     let mut vis: Vec<Vec<u8>> = vec![vec![0; map.len()]; map[0].len()];
+
+    //maps which directions have been visited
+    let mut v_map: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; 4]; map.len()]; map[0].len()];
+    let mut block_locations: Vec<(i32, i32)> = Vec::new();
 
     //Find Start position
     for i in 0..map.len() {
@@ -83,6 +134,9 @@ fn get_visited(map: &Vec<Vec<char>>) -> i32 {
             let mut x = pos as i32;
             let mut dir = Direction { x: 0, y: -1 };
             vis[y as usize][x as usize] = 1;
+            if let Some(dir_pos) = get_dir_pos(dir) {
+                v_map[y as usize][x as usize][dir_pos] = true;
+            }
             //println!("{y},{x} -> {dir}");
             loop {
                 match get_next(map, (y, x), dir) {
@@ -90,8 +144,26 @@ fn get_visited(map: &Vec<Vec<char>>) -> i32 {
                         y = y_n;
                         x = x_n;
                         dir = dir_n;
+
                         vis[y as usize][x as usize] = 1;
-                        //println!("{y},{x} -> {dir}");
+
+                        //println!("Check Loop: {y},{x} -> {dir}");
+                        let ploop = check_loop(map, &v_map, &vis, (y, x), dir);
+                        if ploop {
+                            //loop is potentially possible -> check if it is unique
+                            let y_block = y + dir.y;
+                            let x_block = x + dir.x;
+                            if !block_locations.contains(&(y_block, x_block)) {
+                                //unique -> add it
+                                block_locations.push((y_block, x_block));
+                                //println!("Block: {y_block}, {x_block} -> {dir}");
+                            }
+                        }
+
+                        if let Some(dir_pos) = get_dir_pos(dir) {
+                            //println!("Set Visited: {y},{x} -> {dir_pos}:{dir}");
+                            v_map[y as usize][x as usize][dir_pos] = true;
+                        }
                     }
                     None => {
                         break;
@@ -108,7 +180,7 @@ fn get_visited(map: &Vec<Vec<char>>) -> i32 {
 
     //println!("{:?}", vis);
 
-    visited
+    (visited, block_locations.len())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -117,7 +189,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     for line in fs::read_to_string(file_path)?.lines() {
         map.push(line.chars().collect());
     }
-    let visited = get_visited(&map);
+    let (visited, blocks) = get_visited(&map);
     println!("part1: {visited}");
+    println!("part2: {blocks}");
     Ok(())
 }
