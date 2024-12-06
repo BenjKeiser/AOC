@@ -85,7 +85,7 @@ fn check_loop(
 ) -> bool {
     let mut y = cur_y + dir.y;
     let mut x = cur_x + dir.x;
-    let mut visited: Vec<Vec<bool>> = vec![vec![false; map.len()]; map[0].len()];
+    let mut visited: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; 4]; map.len()]; map[0].len()];
 
     //check if a block could be placed
     if y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
@@ -100,11 +100,12 @@ fn check_loop(
             //exit condition is we run out of the map or reach in internal loop
             while y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
                 //we have already visited here so we have looped and did not find a direction match -> abort
-                if visited[y as usize][x as usize] {
-                    return false;
+                if let Some(dir_pos) = get_dir_pos(t_dir) {
+                    if visited[y as usize][x as usize][dir_pos] {
+                        return false;
+                    }
+                    visited[y as usize][x as usize][dir_pos] = true;
                 }
-
-                visited[y as usize][x as usize] = true;
 
                 if map[y as usize][x as usize] != '#' {             
                     if vis[y as usize][x as usize] == 1 {
