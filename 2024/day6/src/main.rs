@@ -79,13 +79,12 @@ fn get_next(
 fn check_loop(
     map: &Vec<Vec<char>>,
     v_map: &Vec<Vec<Vec<bool>>>,
-    vis: &Vec<Vec<u8>>,
     (cur_y, cur_x): (i32, i32),
     dir: Direction,
 ) -> bool {
     let mut y = cur_y + dir.y;
     let mut x = cur_x + dir.x;
-    let mut visited: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; 4]; map.len()]; map[0].len()];
+    let mut visited: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; 4]; map[0].len()]; map.len()];
 
     //check if a block could be placed
     if y >= 0 && y < v_map.len() as i32 && x >= 0 && x < v_map[0].len() as i32 {
@@ -107,15 +106,13 @@ fn check_loop(
                     visited[y as usize][x as usize][dir_pos] = true;
                 }
 
-                if map[y as usize][x as usize] != '#' {             
-                    if vis[y as usize][x as usize] == 1 {
-                        //println!("Visited: {y},{x} -> {t_dir}");
-                        //location was visited -> check if the direction matches
-                        if let Some(dir_pos) = get_dir_pos(t_dir) {
-                            //println!("Check Pos: {dir_pos}:{t_dir}");
-                            if v_map[y as usize][x as usize][dir_pos] {
-                                return true;
-                            }
+                if map[y as usize][x as usize] != '#' {
+                    //println!("Visited: {y},{x} -> {t_dir}");
+                    //location was visited -> check if the direction matches
+                    if let Some(dir_pos) = get_dir_pos(t_dir) {
+                        //println!("Check Pos: {dir_pos}:{t_dir}");
+                        if v_map[y as usize][x as usize][dir_pos] {
+                            return true;
                         }
                     }
                 } else {
@@ -138,11 +135,11 @@ fn check_loop(
 
 fn get_visited(map: &Vec<Vec<char>>) -> (i32, usize) {
     let mut visited = 0;
-    let mut vis: Vec<Vec<u8>> = vec![vec![0; map.len()]; map[0].len()];
+    let mut vis: Vec<Vec<u8>> = vec![vec![0; map[0].len()]; map.len()];
 
     //maps which directions have been visited
-    let mut v_map: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; 4]; map.len()]; map[0].len()];
-    let mut block_locations: Vec<(i32, i32, Direction)> = Vec::new();
+    let mut v_map: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; 4]; map[0].len()]; map.len()];
+    let mut block_locations: Vec<(i32, i32)> = Vec::new();
 
     //Find Start position
     for i in 0..map.len() {
@@ -164,20 +161,24 @@ fn get_visited(map: &Vec<Vec<char>>) -> (i32, usize) {
 
                         vis[y as usize][x as usize] = 1;
 
-                        //println!("Check Loop: {y},{x} -> {dir}");
-                        let ploop = check_loop(map, &v_map, &vis, (y, x), dir);
-                        if ploop {
-                            //loop is potentially possible -> check if it is unique
-                            let y_block = y + dir.y;
-                            let x_block = x + dir.x;
-                            if !block_locations.contains(&(y_block, x_block, dir)) {
-                                //unique -> add it
-                                block_locations.push((y_block, x_block, dir));
-                                //println!("Block: {y_block}, {x_block} -> {dir}");
-                            }
-                        }
-
                         if let Some(dir_pos) = get_dir_pos(dir) {
+                            if !v_map[y as usize][x as usize][dir_pos] {
+                                //println!("Check Loop: {y},{x} -> {dir}");
+                                let ploop = check_loop(map, &v_map, (y, x), dir);
+                                if ploop {
+                                    //loop is potentially possible -> check if it is unique
+                                    let y_block = y + dir.y;
+                                    let x_block = x + dir.x;
+                                    if !block_locations.contains(&(y_block, x_block))
+                                        && map[y_block as usize][x_block as usize] != '#'
+                                    {
+                                        //unique -> add it
+                                        block_locations.push((y_block, x_block));
+                                        //println!("Block: {y_block}, {x_block} -> {dir}");
+                                    }
+                                }
+                            }
+
                             //println!("Set Visited: {y},{x} -> {dir_pos}:{dir}");
                             v_map[y as usize][x as usize][dir_pos] = true;
                         }
@@ -189,6 +190,8 @@ fn get_visited(map: &Vec<Vec<char>>) -> (i32, usize) {
             }
         }
     }
+
+    println!("{:?}", vis);
 
     for i in 0..vis.len() {
         let s: u8 = vis[i].iter().sum();
@@ -211,3 +214,4 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("part2: {blocks}");
     Ok(())
 }
+//1711 for part2
