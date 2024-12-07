@@ -30,6 +30,20 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
+fn conc(mut lh: u64, rh: u64) -> u64 {
+    if rh == 0 {
+        return lh * 10;
+    }
+    else {
+        let mut r: i64 = rh as i64;
+        while r > 0 {
+            lh *= 10;
+            r /= 10;
+        }
+        return lh + rh;
+    }
+}
+
 fn get_steps_concat(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) -> bool {
     let mut oprnds = operands.clone();
 
@@ -39,14 +53,7 @@ fn get_steps_concat(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) 
         } else if op == OPS::ADD {
             cur = cur + val;
         } else if op == OPS::CONC {
-            let mut lh = cur.to_string();
-            let rh = val.to_string();
-            lh.push_str(&rh);
-            if let Ok(res) = lh.parse::<u64>() {
-                cur = res;
-            } else {
-                return false;
-            }
+            cur = conc(cur, val);
         } else {
             return false;
         }
@@ -81,7 +88,7 @@ fn get_steps_concat(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) 
 
 fn get_steps(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) -> bool {
     let mut oprnds = operands.clone();
-    
+
     if let Some(val) = oprnds.pop_front() {
         if op == OPS::MULT {
             cur = cur * val;
