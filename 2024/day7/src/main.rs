@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
@@ -8,7 +7,7 @@ use std::fs;
 #[derive(Clone, PartialEq)]
 pub struct Equation {
     res: u64,
-    nbs: VecDeque<u64>,
+    nbs: Vec<u64>,
 }
 #[derive(PartialEq, Debug)]
 enum OPS {
@@ -33,8 +32,7 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
 fn conc(mut lh: u64, rh: u64) -> u64 {
     if rh == 0 {
         return lh * 10;
-    }
-    else {
+    } else {
         let mut r: i64 = rh as i64;
         while r > 0 {
             lh *= 10;
@@ -44,10 +42,10 @@ fn conc(mut lh: u64, rh: u64) -> u64 {
     }
 }
 
-fn get_steps_concat(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) -> bool {
-    let mut oprnds = operands.clone();
-
-    if let Some(val) = oprnds.pop_front() {
+fn get_steps_concat(stop: u64, operands: &[u64], mut cur: u64, op: OPS) -> bool {
+    //let mut oprnds = operands.clone();
+    if !operands.is_empty() {
+        let val = operands[0];
         if op == OPS::MULT {
             cur = cur * val;
         } else if op == OPS::ADD {
@@ -57,24 +55,21 @@ fn get_steps_concat(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) 
         } else {
             return false;
         }
-    } else {
-        if cur == stop {
-            return true;
-        }
     }
 
-    if operands.is_empty() {
+    //we checked the last element of operands
+    if operands.len() == 1 {
         if cur == stop {
             return true;
         }
     } else if cur <= stop {
-        if get_steps_concat(stop, &oprnds, cur, OPS::MULT) {
+        if get_steps_concat(stop, &operands[1..], cur, OPS::MULT) {
             return true;
         } else {
-            if get_steps_concat(stop, &oprnds, cur, OPS::ADD) {
+            if get_steps_concat(stop, &operands[1..], cur, OPS::ADD) {
                 return true;
             } else {
-                if get_steps_concat(stop, &oprnds, cur, OPS::CONC) {
+                if get_steps_concat(stop, &operands[1..], cur, OPS::CONC) {
                     return true;
                 }
             }
@@ -86,10 +81,9 @@ fn get_steps_concat(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) 
     false
 }
 
-fn get_steps(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) -> bool {
-    let mut oprnds = operands.clone();
-
-    if let Some(val) = oprnds.pop_front() {
+fn get_steps(stop: u64, operands: &[u64], mut cur: u64, op: OPS) -> bool {
+    if !operands.is_empty() {
+        let val = operands[0];
         if op == OPS::MULT {
             cur = cur * val;
         } else if op == OPS::ADD {
@@ -97,21 +91,17 @@ fn get_steps(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) -> bool
         } else {
             return false;
         }
-    } else {
-        if cur == stop {
-            return true;
-        }
     }
 
-    if operands.is_empty() {
+    if operands.len() == 1 {
         if cur == stop {
             return true;
         }
     } else if cur <= stop {
-        if get_steps(stop, &oprnds, cur, OPS::MULT) {
+        if get_steps(stop, &operands[1..], cur, OPS::MULT) {
             return true;
         } else {
-            if get_steps(stop, &oprnds, cur, OPS::ADD) {
+            if get_steps(stop, &operands[1..], cur, OPS::ADD) {
                 return true;
             }
         }
@@ -125,17 +115,15 @@ fn get_steps(stop: u64, operands: &VecDeque<u64>, mut cur: u64, op: OPS) -> bool
 fn verify_equations_concat(eqs: &Vec<Equation>) -> u64 {
     let mut sum = 0;
     for eq in eqs {
-        let mut operands: VecDeque<u64> = eq.nbs.clone();
-        if let Some(cur) = operands.pop_front() {
-            if get_steps_concat(eq.res, &operands, cur, OPS::MULT) {
+        let cur = eq.nbs[0];
+        if get_steps_concat(eq.res, &eq.nbs[1..], cur, OPS::MULT) {
+            sum += eq.res;
+        } else {
+            if get_steps_concat(eq.res, &eq.nbs[1..], cur, OPS::ADD) {
                 sum += eq.res;
             } else {
-                if get_steps_concat(eq.res, &operands, cur, OPS::ADD) {
+                if get_steps_concat(eq.res, &eq.nbs[1..], cur, OPS::CONC) {
                     sum += eq.res;
-                } else {
-                    if get_steps_concat(eq.res, &operands, cur, OPS::CONC) {
-                        sum += eq.res;
-                    }
                 }
             }
         }
@@ -146,14 +134,12 @@ fn verify_equations_concat(eqs: &Vec<Equation>) -> u64 {
 fn verify_equations(eqs: &Vec<Equation>) -> u64 {
     let mut sum = 0;
     for eq in eqs {
-        let mut operands: VecDeque<u64> = eq.nbs.clone();
-        if let Some(cur) = operands.pop_front() {
-            if get_steps(eq.res, &operands, cur, OPS::MULT) {
+        let cur = eq.nbs[0];
+        if get_steps(eq.res, &eq.nbs[1..], cur, OPS::MULT) {
+            sum += eq.res;
+        } else {
+            if get_steps(eq.res, &eq.nbs[1..], cur, OPS::ADD) {
                 sum += eq.res;
-            } else {
-                if get_steps(eq.res, &operands, cur, OPS::ADD) {
-                    sum += eq.res;
-                }
             }
         }
     }
@@ -165,10 +151,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut equations: Vec<Equation> = Vec::new();
     for line in fs::read_to_string(file_path)?.lines() {
         if let Some((result, numbers)) = line.split_once(":") {
-            let mut nbs: VecDeque<u64> = VecDeque::new();
+            let mut nbs: Vec<u64> = Vec::new();
             for n in numbers.split(' ') {
                 if let Ok(num) = n.parse::<u64>() {
-                    nbs.push_back(num);
+                    nbs.push(num);
                 }
             }
             equations.push(Equation {
