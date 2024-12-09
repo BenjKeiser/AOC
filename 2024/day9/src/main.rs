@@ -103,12 +103,51 @@ fn compact_fs(pdm: &mut Vec<Block>) {
     }
 }
 
+fn compact_fs_blocks(pdm: &mut Vec<Block>) {
+    let mut b_idx: usize = pdm.len() - 1;
+
+    //First block is always of type FILE so we can stop at the block before that.
+    while b_idx >= 1 {
+        if pdm[b_idx].t == BlockType::FILE
+        {
+            //we have a file -> look for an EMPTY block large enough to fit
+            for f_idx in 0..b_idx {
+                if pdm[f_idx].t == BlockType::EMPTY {
+                    if pdm[f_idx].length >= pdm[b_idx].length {
+                        pdm[f_idx].t = BlockType::FILE;
+                        pdm[f_idx].idx = pdm[b_idx].idx;
+
+                        let len: i32 = pdm[f_idx].length as i32 - pdm[b_idx].length as i32;
+                        //compact
+            
+                        if len == 0 {
+                            //FILE Block matches perfectly into EMPTY Block -> we can mark the File block as empty
+                            pdm[b_idx].t = BlockType::EMPTY;                
+                        }
+                        else {
+                            //EMPTY block is larger than FILE Block, we Copy the FILE block and create a new EMPTY block from the rest
+                            //Note: The new block moves the back index one back
+                            pdm.insert(f_idx + 1, Block {t: BlockType::EMPTY, idx: 0, start: pdm[f_idx].start + pdm[b_idx].length as u64, length: pdm[f_idx].length - pdm[b_idx].length});
+                            
+                            b_idx += 1;
+                            pdm[b_idx].t = BlockType::EMPTY;
+                            pdm[f_idx].length = pdm[b_idx].length;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        b_idx -= 1;
+    }
+}
+
 fn get_checksum(pdm: &[Block]) -> u64 {
     let mut chk_sum = 0;
 
     for i in 0..pdm.len() {
         if pdm[i].t == BlockType::EMPTY {
-            break;
+            continue;
         }
         else {
             for cnt in 0..pdm[i].length {
@@ -133,6 +172,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         //println!("{:?}", pdm);
         let chk_sum = get_checksum(&pdm);
         println!("part1: {chk_sum}");
+
+        pdm = parse_disk_map(&disk_map);
+        compact_fs_blocks(&mut pdm);
+        //println!("{:?}", pdm);
+        let chk_sum = get_checksum(&pdm);
+        println!("part2: {chk_sum}");
+
     }
 
     Ok(())
