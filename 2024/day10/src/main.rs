@@ -31,31 +31,25 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-fn get_score(map: &Vec<Vec<u8>>, trailhead: &(usize, usize)) -> usize {
-    let mut steps: Vec<((usize, usize), Direction)> = Vec::new();
+fn get_score(map: &Vec<Vec<u8>>, trailhead: &(usize, usize)) -> (usize, usize) {
+    let mut steps: Vec<((usize, usize), Direction, Vec<(usize,usize)>)> = Vec::new();
     let mut tops: HashSet<(usize, usize)> = HashSet::new();
-    let mut visited: HashSet<((usize, usize), Direction)> = HashSet::new();
+    let mut all_paths: HashSet<Vec<(usize, usize)>> = HashSet::new();
 
     for dir in DIRECTIONS {
-        steps.push((*trailhead, *dir));
+        steps.push((*trailhead, *dir, Vec::new()));
     }
 
-    while let Some(((y, x), dir)) = steps.pop() {
+    while let Some(((y, x), dir, path)) = steps.pop() {
         let cur_step = map[y][x];
 
-        //Skip already visited
-        if visited.contains(&((y, x), dir)) {
-            continue;
-        }
-
-        visited.insert(((y, x), dir));
-
-        //println!("Check: {y}, {x} -> {dir}");
 
         if cur_step == 9 {
-            if !tops.contains(&(y, x)) {
-                tops.insert((y, x));
-            }
+            tops.insert((y, x));
+            
+            let mut new_path = path.clone();
+            new_path.push((y,x));
+            all_paths.insert(new_path);            
         } else {
             let step_x: i32 = x as i32 + dir.x;
             let step_y: i32 = y as i32 + dir.y;
@@ -81,23 +75,31 @@ fn get_score(map: &Vec<Vec<u8>>, trailhead: &(usize, usize)) -> usize {
                 if !(dir.x == -n_dir.x && dir.y == -n_dir.y) {
                     //println!("Add: {step_y}, {step_x} -> {n_dir}");
                     //skip going back
-                    steps.push(((step_y as usize, step_x as usize), *n_dir));
+                    let mut new_path = path.clone();
+                    new_path.push((y,x));
+                    steps.push(((step_y as usize, step_x as usize), *n_dir, new_path));
                 }
             }
         }
     }
 
-    tops.len()
+    //println!("{:?}", all_paths);
+    //println!("{}", all_paths.len());
+
+    (tops.len(), all_paths.len())
 }
 
-fn analyze_map(map: &Vec<Vec<u8>>, trailheads: &Vec<(usize, usize)>) -> usize {
+fn analyze_map(map: &Vec<Vec<u8>>, trailheads: &Vec<(usize, usize)>) -> (usize, usize) {
     let mut total_score = 0;
+    let mut total_rating = 0;
 
     for th in trailheads {
-        total_score += get_score(map, th);
+        let (score, rating) = get_score(map, th);
+        total_score += score;
+        total_rating += rating;
     }
 
-    total_score
+    (total_score, total_rating)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -116,17 +118,19 @@ fn main() -> Result<(), Box<dyn Error>> {
                     trailheads.push((y, x));
                 }
             } else {
-                return Err("How did we get here: {c}".into());
+                row.push(20);
+                //return Err("How did we get here: {c}".into());
             }
             x += 1;
         }
         map.push(row);
         y += 1;
     }
-    println!("{:?}", map);
+    //println!("{:?}", map);
 
-    let score = analyze_map(&map, &trailheads);
+    let (score, rating) = analyze_map(&map, &trailheads);
     println!("part1: {score}");
+    println!("part2: {rating}");
 
     Ok(())
 }
