@@ -25,12 +25,16 @@ fn do_blink(stone: u64) -> Vec<u64> {
     if stone == 0 {
         //stone is 0 new stone is 1
         stones.push(1);
-    } else if get_digits(stone) % 2 == 0 {
-        let s = stone.to_string();
-        stones.push(s[..s.len() / 2].parse::<u64>().unwrap());
-        stones.push(s[s.len() / 2..].parse::<u64>().unwrap());
     } else {
-        stones.push(stone * 2024);
+        let digits = get_digits(stone);
+        if digits % 2 == 0 {
+            let half = digits / 2;
+            let div = 10usize.pow(half) as u64;
+            stones.push(stone / div);
+            stones.push(stone % div);
+        } else {
+            stones.push(stone * 2024);
+        }
     }
 
     stones
@@ -65,20 +69,17 @@ fn get_nb_of_stones_rec(stone: u64, blinks: u32, stone_map: &mut HashMap<(u64, u
     let sts = do_blink(stone);
     if blinks == 1 {
         return sts.len() as u64;
-    }
-    else {
+    } else {
         for s in sts {
-            if let Some(val) = stone_map.get(&(s, blinks-1)) {
+            if let Some(val) = stone_map.get(&(s, blinks - 1)) {
                 all_stones += *val;
+            } else {
+                let stones = get_nb_of_stones_rec(s, blinks - 1, stone_map);
+                stone_map.insert((s, blinks - 1), stones);
+                all_stones += stones;
             }
-            else {
-                let stones = get_nb_of_stones_rec(s, blinks-1, stone_map);
-                stone_map.insert((s, blinks-1), stones);
-                all_stones += stones;                
-            }
-        }    
-        
-    }    
+        }
+    }
 
     all_stones
 }
