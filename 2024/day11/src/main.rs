@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
 use std::fs;
+use std::time::Instant;
 
 fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     match env::args_os().nth(1) {
@@ -57,6 +59,39 @@ fn get_nb_of_stones(stones: &[u64], blinks: u32) -> u64 {
     all_stones
 }
 
+fn get_nb_of_stones_rec(stone: u64, blinks: u32, stone_map: &mut HashMap<(u64, u32), u64>) -> u64 {
+    let mut all_stones = 0;
+
+    let sts = do_blink(stone);
+    if blinks == 1 {
+        return sts.len() as u64;
+    }
+    else {
+        for s in sts {
+            if let Some(val) = stone_map.get(&(s, blinks-1)) {
+                all_stones += *val;
+            }
+            else {
+                let stones = get_nb_of_stones_rec(s, blinks-1, stone_map);
+                stone_map.insert((s, blinks-1), stones);
+                all_stones += stones;                
+            }
+        }    
+        
+    }    
+
+    all_stones
+}
+
+fn solve_part2(stones: &[u64], blinks: u32) -> u64 {
+    let mut all_stones = 0;
+    let mut stone_map: HashMap<(u64, u32), u64> = HashMap::new();
+    for stone in stones {
+        all_stones += get_nb_of_stones_rec(*stone, blinks, &mut stone_map);
+    }
+    all_stones
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let file_path = get_first_arg()?;
     let mut stones: Vec<_> = Vec::new();
@@ -67,10 +102,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    let start = Instant::now();
     let nb_stones = get_nb_of_stones(&stones, 25);
-    println!("Part1: {nb_stones}");
-    //let nb_stones = get_nb_of_stones(&stones, 75);
-    //println!("Part2: {nb_stones}");
+    let duration = start.elapsed();
+    println!("Part1: {nb_stones} | {}s", duration.as_secs_f32());
+    let start = Instant::now();
+    let nb_stones = solve_part2(&stones, 75);
+    let duration = start.elapsed();
+    println!("Part2: {nb_stones} | {}s", duration.as_secs_f32());
 
     Ok(())
 }
