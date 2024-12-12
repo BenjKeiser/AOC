@@ -4,10 +4,11 @@ use std::error::Error;
 use std::ffi::OsString;
 use std::fmt;
 use std::fs;
+use std::time::Instant;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Plots {
-    plot_name: char,
+    id: char,
     plots: Vec<(usize, usize)>,
 }
 
@@ -37,15 +38,103 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
+fn boundary_count(id: char, coords: &(usize, usize), garden: &Vec<Vec<char>>) -> u64 {
+    let mut boundaries = 0;
+
+    let next = get_neighbours(garden.len() as i32, garden[0].len() as i32, coords);
+
+    //get boundaries which are off map
+    boundaries += 4 - next.len() as u64;
+
+    for n in next {
+        if garden[n.0][n.1] != id {
+            boundaries += 1;
+        }
+    }
+
+    boundaries
+}
+
+fn get_neighbours(rows: i32, cols: i32, coords: &(usize, usize)) -> Vec<(usize, usize)> {
+    let mut neighbours: Vec<(usize, usize)> = Vec::new();
+
+    for d in DIRECTIONS {
+        let y = coords.0 as i32 - d.y;
+        let x = coords.1 as i32 - d.x;
+        if y >= 0 && y <= rows - 1 && x >= 0 && x <= cols - 1 {
+            neighbours.push((y as usize, x as usize));
+        }
+    }
+
+    neighbours
+}
+
+fn get_score(garden: &Vec<Vec<char>>, plots: &Vec<Plots>) -> u64 {
+    let mut score = 0;
+    for p in plots {
+        let area = p.plots.len() as u64;
+        let mut boundary = 0;
+        for i in 0..p.plots.len() {
+            boundary += boundary_count(p.id, &p.plots[i], garden);
+        }
+        score += area * boundary;
+    }
+
+    score
+}
+
 fn get_plots(garden: &Vec<Vec<char>>) -> Vec<Plots> {
     let mut plots: Vec<Plots> = Vec::new();
     let mut visited_plots: HashSet<(usize, usize)> = HashSet::new();
 
-    //put a starting point into a vector
-    //explore the plot of the starting points -> use a different vector as the exploration queue
-    //if the points are of the same plot, mark them as visited in the HashSet
-    //put neighbours with a different plot on the first vector
-    //loop until both vectors are empty
+    let mut plot_queue: Vec<(usize, usize)> = Vec::new();
+    let mut current_plot_queue: Vec<(usize, usize)> = Vec::new();
+
+    plot_queue.push((0, 0));
+
+    while !plot_queue.is_empty() {
+        if let Some((y, x)) = plot_queue.pop() {
+            let current_plot_id = garden[y][x];
+            let mut current_plot: Vec<(usize, usize)> = Vec::new();
+            current_plot_queue.push((y, x));
+            while !current_plot_queue.is_empty() {
+                if let Some((y_c, x_c)) = current_plot_queue.pop() {
+                    if garden[y_c][x_c] != current_plot_id {
+                        //wrong plot skip
+                        continue;
+                    }
+
+                    if visited_plots.contains(&(y_c, x_c)) {
+                        //already were here skip
+                        continue;
+                    }
+                    visited_plots.insert((y_c, x_c));
+
+                    //we add the coordinates to the combined plot
+                    current_plot.push((y_c, x_c));
+
+                    let next =
+                        get_neighbours(garden.len() as i32, garden[0].len() as i32, &(y_c, x_c));
+                    for n in next {
+                        //println!("({y_c}, {x_c}) [{current_plot_id}]-> {:?} [{}]", n, garden[n.0][n.1]);
+                        if garden[n.0][n.1] == current_plot_id {
+                            current_plot_queue.push((n.0, n.1));
+                        } else {
+                            plot_queue.push((n.0, n.1));
+                        }
+                    }
+                }
+            }
+            //no more neighbours in this plot -> we put it on the list if it is valid
+            if !current_plot.is_empty() {
+                plots.push(Plots {
+                    id: current_plot_id,
+                    plots: current_plot,
+                });
+                //println!("Added")
+            }
+        }
+    }
 
     plots
 }
@@ -58,5 +147,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         garden.push(line.chars().collect());
     }
 
+    let start = Instant::now();
+    let plots = get_plots(&garden);
+    let score = get_score(&garden, &plots);
+    let duration = start.elapsed();
+    println!("Part1: {score} | {}s", duration.as_secs_f32());
+    //println!("{:?}", plots);
     Ok(())
 }
