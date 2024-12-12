@@ -38,9 +38,126 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
+fn is_boundary(
+    id: char,
+    coords: &(usize, usize),
+    dir: &Direction,
+    garden: &Vec<Vec<char>>,
+) -> bool {
+    let y = coords.0 as i32 + dir.y;
+    let x = coords.1 as i32 + dir.x;
+    if !(y >= 0 && y <= garden.len() as i32 - 1 && x >= 0 && x <= garden[0].len() as i32 - 1) {
+        true
+    } else {
+        id != garden[y as usize][x as usize]
+    }
+}
+
+//amount of corners = amount of straights for a polygon
 fn corner_count(id: char, coords: &(usize, usize), garden: &Vec<Vec<char>>) -> u64 {
     let mut corners = 0;
 
+    //let visited: HashSet<((usize, usize), Direction)> = HashSet::new();
+    let boundaries = boundary_count(id, coords, garden);
+
+    match boundaries {
+        0 => {
+            //check the diagonals if there might be a corner, each diagonal that doesn't match id is a corner
+            //with 0 boundaries we cannot be at map edge -> no need to check coordinate validity
+            let corner_dirs = [
+                Direction { x: -1, y: -1 },
+                Direction { x: 1, y: 1 },
+                Direction { x: -1, y: 1 },
+                Direction { x: 1, y: -1 },
+            ];
+
+            for d in corner_dirs {
+                if id != garden[(coords.0 as i32 + d.y) as usize][(coords.1 as i32 + d.x) as usize]
+                {
+                    corners += 1;
+                }
+            }
+        }
+        1 => {
+            //check diagonals, oposite of boundary
+            corners = 0;
+            for (idx, d) in DIRECTIONS.iter().enumerate() {
+                if is_boundary(id, coords, d, garden) {
+                    let mut diags: Vec<Direction> = Vec::new();
+                    match idx {
+                        0 => {
+                            diags.push(Direction { x: -1, y: 1 });
+                            diags.push(Direction { x: 1, y: 1 });
+                        }
+                        1 => {
+                            diags.push(Direction { x: -1, y: -1 });
+                            diags.push(Direction { x: -1, y: 1 });
+                        }
+                        2 => {
+                            diags.push(Direction { x: -1, y: -1 });
+                            diags.push(Direction { x: 1, y: -1 });
+                        }
+                        3 => {
+                            diags.push(Direction { x: 1, y: -1 });
+                            diags.push(Direction { x: 1, y: 1 });
+                        }
+                        _ => {}
+                    }
+                    for diag in diags {
+                        if is_boundary(id, coords, &diag, garden) {
+                            corners += 1;
+                        }
+                    }
+                }
+            }
+        }
+        2 => {
+            //check if boundaries are parallel, if not then it is a corner
+            //check the diagonal if a corner is found, it could potentially also be a corner
+            for (idx, d) in DIRECTIONS.iter().enumerate() {
+                if is_boundary(id, coords, d, garden) {
+                    let mut n_idx = idx as i32 - 1;
+                    if n_idx < 0 {
+                        n_idx = DIRECTIONS.len() as i32 - 1;
+                    }
+                    if is_boundary(id, coords, &DIRECTIONS[n_idx as usize], garden) {
+                        corners = 1;
+                        let diag: Direction = Direction {
+                            y: (DIRECTIONS[idx].y + DIRECTIONS[n_idx as usize].y) * (-1),
+                            x: (DIRECTIONS[idx].x + DIRECTIONS[n_idx as usize].x) * (-1),
+                        };
+                        if is_boundary(id, coords, &diag, garden) {
+                            corners += 1;
+                        }
+                    } else {
+                        n_idx = (idx as i32 + 1) % 4;
+                        if is_boundary(id, coords, &DIRECTIONS[n_idx as usize], garden) {
+                            corners = 1;
+                            let diag: Direction = Direction {
+                                y: (DIRECTIONS[idx].y + DIRECTIONS[n_idx as usize].y) * (-1),
+                                x: (DIRECTIONS[idx].x + DIRECTIONS[n_idx as usize].x) * (-1),
+                            };
+                            if is_boundary(id, coords, &diag, garden) {
+                                corners += 1;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        3 => {
+            //must be 2 corners
+            corners = 2;
+        }
+        4 => {
+            //must be 4 corners single coordinate plot
+            corners = 4;
+        }
+        _ => {
+            corners = 0;
+        }
+    }
 
     corners
 }
@@ -50,7 +167,7 @@ fn boundary_count(id: char, coords: &(usize, usize), garden: &Vec<Vec<char>>) ->
 
     let next = get_neighbours(garden.len() as i32, garden[0].len() as i32, coords);
 
-    //get boundaries which are off map
+    //add boundaries which are off map
     boundaries += 4 - next.len() as u64;
 
     for n in next {
