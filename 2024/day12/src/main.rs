@@ -38,6 +38,13 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
+fn corner_count(id: char, coords: &(usize, usize), garden: &Vec<Vec<char>>) -> u64 {
+    let mut corners = 0;
+
+
+    corners
+}
+
 fn boundary_count(id: char, coords: &(usize, usize), garden: &Vec<Vec<char>>) -> u64 {
     let mut boundaries = 0;
 
@@ -69,7 +76,7 @@ fn get_neighbours(rows: i32, cols: i32, coords: &(usize, usize)) -> Vec<(usize, 
     neighbours
 }
 
-fn get_score(garden: &Vec<Vec<char>>, plots: &Vec<Plots>) -> u64 {
+fn get_score_p1(garden: &Vec<Vec<char>>, plots: &Vec<Plots>) -> u64 {
     let mut score = 0;
     for p in plots {
         let area = p.plots.len() as u64;
@@ -78,6 +85,20 @@ fn get_score(garden: &Vec<Vec<char>>, plots: &Vec<Plots>) -> u64 {
             boundary += boundary_count(p.id, &p.plots[i], garden);
         }
         score += area * boundary;
+    }
+
+    score
+}
+
+fn get_score_p2(garden: &Vec<Vec<char>>, plots: &Vec<Plots>) -> u64 {
+    let mut score = 0;
+    for p in plots {
+        let area = p.plots.len() as u64;
+        let mut corners = 0;
+        for i in 0..p.plots.len() {
+            corners += corner_count(p.id, &p.plots[i], garden);
+        }
+        score += area * corners;
     }
 
     score
@@ -149,9 +170,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let start = Instant::now();
     let plots = get_plots(&garden);
-    let score = get_score(&garden, &plots);
+    let score = get_score_p1(&garden, &plots);
     let duration = start.elapsed();
     println!("Part1: {score} | {}s", duration.as_secs_f32());
+
+    let start = Instant::now();
+    let plots = get_plots(&garden);
+    let score = get_score_p2(&garden, &plots);
+    let duration = start.elapsed();
+    println!("Part2: {score} | {}s", duration.as_secs_f32());
     //println!("{:?}", plots);
     Ok(())
 }
