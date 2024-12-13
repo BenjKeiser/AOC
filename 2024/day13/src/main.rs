@@ -35,7 +35,7 @@ impl Machine {
     fn solve(&self) -> Option<(usize, usize)> {
         let b: f64 = (self.a.x * self.p.y - self.a.y * self.p.x)
             / (self.a.x * self.b.y - self.b.x * self.a.y);
-        let a: f64 = (self.p.y - (self.b.y* b)) / self.a.y;
+        let a: f64 = (self.p.y - (self.b.y * b)) / self.a.y;
         if a.fract() == 0.0 && b.fract() == 0.0 {
             return Some((a as usize, b as usize));
         }
