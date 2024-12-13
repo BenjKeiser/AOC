@@ -3,6 +3,7 @@ use std::env;
 use std::error::Error;
 use std::ffi::OsString;
 use std::fs;
+use std::ops::Add;
 use std::time::Instant;
 
 fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
@@ -48,6 +49,17 @@ impl Machine {
         }
 
         None
+    }
+}
+
+impl Add<f64> for Prize {
+    type Output = Prize;
+
+    fn add(self, value: f64) -> Prize {
+        Prize {
+            x: self.x + value,
+            y: self.y + value,
+        }
     }
 }
 
@@ -107,10 +119,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let duration = start.elapsed();
     println!("Part1: {tokens} | {}s", duration.as_secs_f32());
 
-    for m in &mut machines {
-        m.p.x += 10000000000000f64;
-        m.p.y += 10000000000000f64;
-    }
+    machines
+        .iter_mut()
+        .for_each(|m| m.p = m.p + 10000000000000f64);
 
     let start = Instant::now();
     let tokens: usize = machines
