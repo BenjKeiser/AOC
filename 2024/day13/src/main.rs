@@ -14,14 +14,14 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Button {
-    x: i32,
-    y: i32,
+    x: f64,
+    y: f64,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Prize {
-    x: i32,
-    y: i32,
+    x: f64,
+    y: f64,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -33,9 +33,9 @@ pub struct Machine {
 
 impl Machine {
     fn solve(&self) -> Option<(usize, usize)> {
-        let b: f64 = (self.a.x * self.p.y - self.a.y * self.p.x) as f64
-            / (self.a.x * self.b.y - self.b.x * self.a.y) as f64;
-        let a: f64 = (self.p.y as f64 - (self.b.y as f64 * b)) / self.a.y as f64;
+        let b: f64 = (self.a.x * self.p.y - self.a.y * self.p.x)
+            / (self.a.x * self.b.y - self.b.x * self.a.y);
+        let a: f64 = (self.p.y - (self.b.y* b)) / self.a.y;
         if a.fract() == 0.0 && b.fract() == 0.0 {
             return Some((a as usize, b as usize));
         }
@@ -76,18 +76,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut idx = 0;
     while idx < numbers.len() {
         let b_a: Button = Button {
-            x: numbers[idx],
-            y: numbers[idx + 1],
+            x: numbers[idx] as f64,
+            y: numbers[idx + 1] as f64,
         };
         idx += 2;
         let b_b: Button = Button {
-            x: numbers[idx],
-            y: numbers[idx + 1],
+            x: numbers[idx] as f64,
+            y: numbers[idx + 1] as f64,
         };
         idx += 2;
         let prize: Prize = Prize {
-            x: numbers[idx],
-            y: numbers[idx + 1],
+            x: numbers[idx] as f64,
+            y: numbers[idx + 1] as f64,
         };
         idx += 2;
         machines.push(Machine {
@@ -107,10 +107,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let duration = start.elapsed();
     println!("Part1: {tokens} | {}s", duration.as_secs_f32());
 
-    let start = Instant::now();
+    for m in &mut machines {
+        m.p.x += 10000000000000f64;
+        m.p.y += 10000000000000f64;
+    }
 
+    let start = Instant::now();
+    let tokens: usize = machines
+        .iter()
+        .filter_map(|machine| machine.get_tokens())
+        .sum();
     let duration = start.elapsed();
-    println!("Part2: {} | {}s", 2, duration.as_secs_f32());
+    println!("Part2: {tokens} | {}s", duration.as_secs_f32());
 
     Ok(())
 }
