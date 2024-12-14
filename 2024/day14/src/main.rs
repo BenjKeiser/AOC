@@ -4,6 +4,7 @@ use std::error::Error;
 use std::ffi::OsString;
 use std::fs;
 use std::ops::Add;
+use std::ops::Mul;
 use std::time::Instant;
 
 fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
@@ -15,14 +16,89 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Point {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub struct Velocity {
-    x: i32,
-    y: i32,
+pub struct Robot {
+    p: Point,
+    v: Point,
+}
+
+impl Add for Point {
+    type Output = Point; // Define the result type of the addition
+
+    fn add(self, other: Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl Mul<i64> for Point {
+    type Output = Point; // Define the result type of the addition
+
+    fn mul(self, scalar: i64) -> Point {
+        Point {
+            x: self.x * scalar,
+            y: self.y * scalar,
+        }
+    }
+}
+
+impl Point {
+    fn normalize(&mut self, width: usize, height: usize) {
+        self.x = self.x % width as i64;
+        self.y = self.y % height as i64;
+        if self.x < 0 {
+            self.x += width as i64;
+        }
+        if self.y < 0 {
+            self.y += height as i64;
+        }
+    }
+
+    fn get_quadrant(self, width: usize, height: usize) -> Option<u64> {
+        if self.x >= 0 && self.x < width as i64 / 2 {
+            if self.y >= 0 && self.y < height as i64 / 2 {
+                return Some(1);
+            } else if self.y >= height as i64 / 2 + 1 && self.y < height as i64 {
+                return Some(2);
+            } else {
+                return None;
+            }
+        } else if self.x >= width as i64 / 2 + 1 && self.x < width as i64 {
+            if self.y >= 0 && self.y < height as i64 / 2 {
+                return Some(3);
+            } else if self.y >= height as i64 / 2 + 1 && self.y < height as i64 {
+                return Some(4);
+            } else {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    }
+}
+
+impl Robot {
+    fn move_robot(self, times: i64) -> Point {
+        self.p + self.v * times
+    }
+}
+
+fn get_safety_factor(robots: &Vec<Robot>, moves: i64, width: usize, height: usize) -> usize {
+    let mut grid_pos: Vec<Point> = robots.iter().map(|r| r.move_robot(moves)).collect(); //get grid positions
+    grid_pos.iter_mut().for_each(|p| p.normalize(width, height));
+
+    let quadrants: Vec<_> = grid_pos
+        .iter()
+        .filter_map(|p| p.get_quadrant(width, height))
+        .collect();
+    
+    quadrants.iter().filter(|&&p| p == 1).count() * quadrants.iter().filter(|&&p| p == 2).count() * quadrants.iter().filter(|&&p| p == 3).count() * quadrants.iter().filter(|&&p| p == 4).count()
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -34,30 +110,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     let re = Regex::new(r"p=([+-]?\d+),([+-]?\d+) v=([+-]?\d+),([+-]?\d+)").unwrap();
 
     // Collect all groups
-    let robots: Vec<(Point, Velocity)> = re
+    let robots: Vec<Robot> = re
         .captures_iter(&input) // Iterate over all matches
         .filter_map(|cap| {
-            Some((
-                Point {
-                    x: cap[1].parse::<i32>().ok()?, // p.x
-                    y: cap[2].parse::<i32>().ok()?,
-                }, // p.y
-                Velocity {
-                    x: cap[3].parse::<i32>().ok()?, // v.x
-                    y: cap[4].parse::<i32>().ok()?,
-                }, // v.y
-            ))
+            Some(Robot {
+                p: Point {
+                    x: cap[1].parse::<i64>().ok()?, // p.x
+                    y: cap[2].parse::<i64>().ok()?, // p.y
+                },
+                v: Point {
+                    x: cap[3].parse::<i64>().ok()?, // v.x
+                    y: cap[4].parse::<i64>().ok()?, // v.y
+                },
+            })
         })
         .collect();
 
-    println!("{:?}", robots);
-
-    //println!("{:?}", machines);
+    //println!("{:?}", robots);
 
     let start = Instant::now();
-
+    //let sf = get_safety_factor(&robots, 100, 11, 7); //-> test_input.txt
+    let sf = get_safety_factor(&robots, 100, 101, 103);
     let duration = start.elapsed();
-    println!("Part1: {} | {}s", 2, duration.as_secs_f32());
+    println!("Part1: {} | {}s", sf, duration.as_secs_f32());
 
     let start = Instant::now();
 
