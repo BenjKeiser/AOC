@@ -87,6 +87,20 @@ impl Robot {
     fn move_robot(self, times: i64) -> Point {
         self.p + self.v * times
     }
+
+    fn move_robot_mut(&mut self, times: i64) {
+        self.p = self.p + self.v * times
+    }
+}
+
+fn print_robots(robots: &Vec<Point>, width: usize, height: usize) {
+    let mut grid: Vec<Vec<char>> = vec![vec!['.'; width]; height];
+    for r in robots {
+        grid[r.y as usize][r.x as usize] = '#';
+    }
+    for l in grid {
+        println!("{}", l.iter().cloned().collect::<String>());
+    }
 }
 
 fn get_safety_factor(robots: &Vec<Robot>, moves: i64, width: usize, height: usize) -> usize {
@@ -97,8 +111,45 @@ fn get_safety_factor(robots: &Vec<Robot>, moves: i64, width: usize, height: usiz
         .iter()
         .filter_map(|p| p.get_quadrant(width, height))
         .collect();
-    
-    quadrants.iter().filter(|&&p| p == 1).count() * quadrants.iter().filter(|&&p| p == 2).count() * quadrants.iter().filter(|&&p| p == 3).count() * quadrants.iter().filter(|&&p| p == 4).count()
+
+    quadrants.iter().filter(|&&p| p == 1).count()
+        * quadrants.iter().filter(|&&p| p == 2).count()
+        * quadrants.iter().filter(|&&p| p == 3).count()
+        * quadrants.iter().filter(|&&p| p == 4).count()
+}
+
+fn check_neighbours(robots: &Vec<Point>) -> bool {
+    for r in robots {
+        if robots.contains(&(*r + Point { x: -1, y: 1 }))
+            && robots.contains(&(*r + Point { x: 0, y: 1 }))
+            && robots.contains(&(*r + Point { x: 1, y: 1 }))
+            && robots.contains(&(*r + Point { x: -1, y: 0 }))
+            && robots.contains(&(*r + Point { x: 1, y: 0 }))
+            && robots.contains(&(*r + Point { x: -1, y: -1 }))
+            && robots.contains(&(*r + Point { x: 0, y: -1 }))
+            && robots.contains(&(*r + Point { x: 1, y: -1 }))
+        {
+            return true;
+        }
+    }
+    false
+}
+
+fn find_tree(robots: &Vec<Robot>, moves: i64, width: usize, height: usize) -> i64 {
+    let mut rs = robots.clone();
+
+    let mut i = 0;
+    while i < moves {
+        rs.iter_mut().for_each(|r| r.move_robot_mut(1));
+        let mut grid_pos: Vec<Point> = rs.iter().map(|r| r.p).collect(); //get grid positions
+        grid_pos.iter_mut().for_each(|p| p.normalize(width, height));
+        i += 1;
+        if check_neighbours(&grid_pos) {
+            print_robots(&grid_pos, width, height);
+            return i;
+        }
+    }
+    0
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -135,9 +186,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Part1: {} | {}s", sf, duration.as_secs_f32());
 
     let start = Instant::now();
-
+    let iters = find_tree(&robots, 10000, 101, 103);
     let duration = start.elapsed();
-    println!("Part2: {} | {}s", 1, duration.as_secs_f32());
+    println!("Part2: {} | {}s", iters, duration.as_secs_f32());
 
     Ok(())
 }
