@@ -63,7 +63,7 @@ impl fmt::Display for Grid {
         Ok(())
     }
 }
-
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Hash)]
 pub struct Direction {
     y: i32,
     x: i32,
@@ -123,7 +123,7 @@ impl Mul<i32> for Direction {
 /* End of Grid Library */
 
 /* Point Library */
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Hash)]
 pub struct Point {
     x: usize,
     y: usize,
