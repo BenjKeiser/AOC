@@ -1,5 +1,4 @@
 use grid::{Direction, Grid, Point};
-use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
@@ -36,9 +35,8 @@ impl Maze {
         self: &Self,
         pos: &Point,
         dir: &Direction,
-        path: &Vec<Point>,
         cost: usize,
-        cost_map: &mut Vec<Vec<Vec<usize>>>,
+        cost_map: &mut Box<Vec<Vec<Vec<usize>>>>,
     ) -> Option<(Vec<Point>, usize)> {
         if self.maze.is_move_valid(pos, dir) {
             let next: Point = (*pos + dir).unwrap();
@@ -55,17 +53,15 @@ impl Maze {
             }
             cost_map[next.y][next.x][dir.to_idx().unwrap()] = c;
 
-            let mut new_path: Vec<Point> = path.clone();
             //check if end is reached
             if next == self.end {
-                new_path.push(next);
-                return Some((new_path, c));
+                return Some((Vec::new(), c));
             }
 
             let mut cost_min = MAX;
             let mut ret_path: Vec<Point> = Vec::new();
             //make further moves
-            if let Some((p, p_c)) = self.make_move(&next, &dir, &new_path, c, cost_map) {
+            if let Some((p, p_c)) = self.make_move(&next, &dir, c, cost_map) {
                 if p_c < cost_min {
                     ret_path = p;
                     cost_min = p_c;
@@ -75,7 +71,6 @@ impl Maze {
             if let Some((p, p_c)) = self.make_move(
                 &next,
                 &(dir.turn_left().unwrap()),
-                &new_path,
                 c + 1000,
                 cost_map,
             ) {
@@ -88,7 +83,6 @@ impl Maze {
             if let Some((p, p_c)) = self.make_move(
                 &next,
                 &(dir.turn_right().unwrap()),
-                &new_path,
                 c + 1000,
                 cost_map,
             ) {
@@ -97,7 +91,7 @@ impl Maze {
                     cost_min = p_c;
                 }
             }
-            if !ret_path.is_empty() {
+            if cost_min != MAX {
                 return Some((ret_path, cost_min));
             }
         }
@@ -109,12 +103,12 @@ impl Maze {
         let mut path: Vec<Point> = Vec::new();
         let mut cost: usize = MAX;
 
-        let mut cost_map: Vec<Vec<Vec<usize>>> =
-            vec![vec![vec![MAX; 4]; self.maze[0].len()]; self.maze.len()];
+        let mut cost_map: Box<Vec<Vec<Vec<usize>>>> =
+            Box::new(vec![vec![vec![MAX; 4]; self.maze[0].len()]; self.maze.len()]);
 
         cost_map[self.start.0.y][self.start.0.x][self.start.1.to_idx().unwrap()] = 0;
         if let Some((p, c)) =
-            self.make_move(&self.start.0, &self.start.1, &Vec::new(), 0, &mut cost_map)
+            self.make_move(&self.start.0, &self.start.1, 0, &mut cost_map)
         {
             if c < cost {
                 cost = c;
@@ -124,7 +118,7 @@ impl Maze {
 
         let mut turn = self.start.1.turn_left().unwrap();
         cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 1000;
-        if let Some((p, c)) = self.make_move(&self.start.0, &turn, &Vec::new(), 1000, &mut cost_map)
+        if let Some((p, c)) = self.make_move(&self.start.0, &turn, 1000, &mut cost_map)
         {
             if c < cost {
                 cost = c;
@@ -133,7 +127,7 @@ impl Maze {
         }
         turn = turn.turn_left().unwrap();
         cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 2000;
-        if let Some((p, c)) = self.make_move(&self.start.0, &turn, &Vec::new(), 2000, &mut cost_map)
+        if let Some((p, c)) = self.make_move(&self.start.0, &turn, 2000, &mut cost_map)
         {
             if c < cost {
                 cost = c;
@@ -143,7 +137,7 @@ impl Maze {
 
         turn = turn.turn_right().unwrap();
         cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 1000;
-        if let Some((p, c)) = self.make_move(&self.start.0, &turn, &Vec::new(), 1000, &mut cost_map)
+        if let Some((p, c)) = self.make_move(&self.start.0, &turn, 1000, &mut cost_map)
         {
             if c < cost {
                 cost = c;
