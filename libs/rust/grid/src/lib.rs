@@ -1,5 +1,5 @@
-use std::ops::{Add, Mul, Sub};
 use std::fmt;
+use std::ops::{Add, Mul, Sub};
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, PartialEq, Debug)]
@@ -68,6 +68,26 @@ impl Direction {
             '^' => Some(Direction { x: 0, y: -1 }),
             '>' => Some(Direction { x: 1, y: 0 }),
             'v' => Some(Direction { x: 0, y: 1 }),
+            _ => None,
+        }
+    }
+
+    pub fn turn_left(self: &Self) -> Option<Direction> {
+        match self {
+            Direction { x: -1, y: 0 } => Some(Direction { x: 0, y: 1 }),
+            Direction { x: 0, y: -1 } => Some(Direction { x: -1, y: 0 }),
+            Direction { x: 1, y: 0 } => Some(Direction { x: 0, y: -1 }),
+            Direction { x: 0, y: 1 } => Some(Direction { x: 1, y: 0 }),
+            _ => None,
+        }
+    }
+
+    pub fn turn_right(self: &Self) -> Option<Direction> {
+        match self {
+            Direction { x: -1, y: 0 } => Some(Direction { x: 0, y: -1 }),
+            Direction { x: 0, y: -1 } => Some(Direction { x: 1, y: 0 }),
+            Direction { x: 1, y: 0 } => Some(Direction { x: 0, y: 1 }),
+            Direction { x: 0, y: 1 } => Some(Direction { x: -1, y: 0 }),
             _ => None,
         }
     }
