@@ -36,7 +36,7 @@ impl Maze {
         pos: &Point,
         dir: &Direction,
         cost: usize,
-        cost_map: &mut Box<Vec<Vec<Vec<usize>>>>,
+        cost_map: &mut Box<Vec<[usize; 4]>>,
     ) -> Option<(Vec<Point>, usize)> {
         if self.maze.is_move_valid(pos, dir) {
             let next: Point = (*pos + dir).unwrap();
@@ -47,11 +47,11 @@ impl Maze {
             }
 
             //update cost matrix
-            if cost_map[next.y][next.x][dir.to_idx().unwrap()] < c {
+            if cost_map[next.y+next.x*self.maze.len()][dir.to_idx().unwrap()] < c {
                 //we were already here but cheaper -> we can stop
                 return None;
             }
-            cost_map[next.y][next.x][dir.to_idx().unwrap()] = c;
+            cost_map[next.y+next.x*self.maze.len()][dir.to_idx().unwrap()] = c;
 
             //check if end is reached
             if next == self.end {
@@ -103,10 +103,9 @@ impl Maze {
         let mut path: Vec<Point> = Vec::new();
         let mut cost: usize = MAX;
 
-        let mut cost_map: Box<Vec<Vec<Vec<usize>>>> =
-            Box::new(vec![vec![vec![MAX; 4]; self.maze[0].len()]; self.maze.len()]);
+        let mut cost_map: Box<Vec<[usize; 4]>> = Box::new(vec![[MAX; 4]; self.maze.len() * self.maze[0].len()]);
 
-        cost_map[self.start.0.y][self.start.0.x][self.start.1.to_idx().unwrap()] = 0;
+        cost_map[self.start.0.y + self.start.0.x * self.maze.len()][self.start.1.to_idx().unwrap()] = 0;
         if let Some((p, c)) =
             self.make_move(&self.start.0, &self.start.1, 0, &mut cost_map)
         {
@@ -117,7 +116,7 @@ impl Maze {
         }
 
         let mut turn = self.start.1.turn_left().unwrap();
-        cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 1000;
+        cost_map[self.start.0.y + self.start.0.x * self.maze.len()][turn.to_idx().unwrap()] = 1000;
         if let Some((p, c)) = self.make_move(&self.start.0, &turn, 1000, &mut cost_map)
         {
             if c < cost {
@@ -126,7 +125,7 @@ impl Maze {
             }
         }
         turn = turn.turn_left().unwrap();
-        cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 2000;
+        cost_map[self.start.0.y + self.start.0.x * self.maze.len()][turn.to_idx().unwrap()] = 2000;
         if let Some((p, c)) = self.make_move(&self.start.0, &turn, 2000, &mut cost_map)
         {
             if c < cost {
@@ -136,7 +135,7 @@ impl Maze {
         }
 
         turn = turn.turn_right().unwrap();
-        cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 1000;
+        cost_map[self.start.0.y + self.start.0.x * self.maze.len()][turn.to_idx().unwrap()] = 1000;
         if let Some((p, c)) = self.make_move(&self.start.0, &turn, 1000, &mut cost_map)
         {
             if c < cost {
