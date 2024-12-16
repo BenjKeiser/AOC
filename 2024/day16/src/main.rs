@@ -1,12 +1,43 @@
 use grid::{Direction, Grid, Point};
-use std::collections::HashSet;
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
-use std::fmt;
 use std::fs;
 use std::time::Instant;
 use std::usize::MAX;
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct Node {
+    cost: usize,
+    pos: Point,
+    dir: Direction,
+    path: Vec<Point>,
+}
+
+// Custom ordering for the priority queue (min-heap based on cost)
+impl Ord for Node {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Compare by cost (reverse for min-heap behavior)
+        match other.cost.cmp(&self.cost) {
+            Ordering::Equal => {
+                // Tie-breaker: compare by pos (Point)
+                match self.pos.cmp(&other.pos) {
+                    Ordering::Equal => self.dir.cmp(&other.dir), // Tie-breaker: compare by dir
+                    other_order => other_order,
+                }
+            }
+            other_order => other_order,
+        }
+    }
+}
+
+impl PartialOrd for Node {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     match env::args_os().nth(1) {
@@ -15,207 +46,109 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
-pub struct Maze {
-    start: (Point, Direction),
-    end: Point,
-    maze: Grid,
-}
+//use dijkstra
+fn solve_maze(maze: &Grid, start: &Point, start_dir: &Direction, end: &Point) -> (usize, usize) {
+    let mut visited: Vec<Vec<Vec<usize>>> = vec![vec![vec![MAX; 4]; maze[0].len()]; maze.len()];
 
-impl fmt::Display for Maze {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "{}", self.maze)?;
-        writeln!(f, "{} -> {}", self.start.0, self.start.1)?;
-        writeln!(f, "{}", self.end,)?;
-        Ok(())
-    }
-}
+    let mut heap: BinaryHeap<Node> = BinaryHeap::new();
 
-impl Maze {
-    fn make_move(
-        self: &Self,
-        pos: &Point,
-        dir: &Direction,
-        cost: usize,
-        cost_map: &mut Box<Vec<[usize; 4]>>,
-    ) -> Option<(Vec<Point>, usize, HashSet<Point>)> {
-        if self.maze.is_move_valid(pos, dir) {
-            let next: Point = (*pos + dir).unwrap();
-            let c = cost + 1;
-            if self.maze[next.y][next.x] == '#' {
-                //we cannot move here
-                return None;
-            }
+    let mut best_path_cost = MAX;
+    let mut best_path: Vec<Point>;
+    let mut best_path_collection: HashMap<usize, HashSet<Point>> = HashMap::new();
+    let mut unique_tiles = 0;
 
-            //update cost matrix
-            if cost_map[next.y + next.x * self.maze.len()][dir.to_idx().unwrap()] < c {
-                //we were already here but cheaper -> we can stop
-                return None;
-            }
-            cost_map[next.y + next.x * self.maze.len()][dir.to_idx().unwrap()] = c;
+    //push start element
+    heap.push(Node {
+        cost: 0,
+        pos: *start,
+        dir: *start_dir,
+        path: Vec::new(),
+    });
+    visited[start.y][start.x][start_dir.to_idx().unwrap()] = 0;
+    let mut turn = start_dir.turn_left().unwrap();
+    heap.push(Node {
+        cost: 1000,
+        pos: *start,
+        dir: turn,
+        path: Vec::new(),
+    });
+    visited[start.y][start.x][turn.to_idx().unwrap()] = 1000;
+    turn = turn.turn_left().unwrap();
+    heap.push(Node {
+        cost: 2000,
+        pos: *start,
+        dir: turn,
+        path: Vec::new(),
+    });
+    visited[start.y][start.x][turn.to_idx().unwrap()] = 2000;
+    turn = start_dir.turn_right().unwrap();
+    heap.push(Node {
+        cost: 1000,
+        pos: *start,
+        dir: turn,
+        path: Vec::new(),
+    });
+    visited[start.y][start.x][turn.to_idx().unwrap()] = 1000;
 
-            //check if end is reached
-            if next == self.end {
-                return Some((vec![next], c, HashSet::from([next])));
-            }
+    while let Some(mut node) = heap.pop() {
+        //Skip nodes that have been processed with shorter paths
+        if node.cost > visited[node.pos.y][node.pos.x][node.dir.to_idx().unwrap()] {
+            continue;
+        }
+        visited[node.pos.y][node.pos.x][node.dir.to_idx().unwrap()] = node.cost;
 
-            let mut cost_min = MAX;
-            let mut ret_path: Vec<Point> = Vec::new();
+        node.path.push(node.pos);
 
-            let mut all_c: [usize; 3] = [MAX, MAX, MAX];
-            let mut all_t: [HashSet<Point>; 3] = [HashSet::new(), HashSet::new(), HashSet::new()];
-            //make further moves
-            if let Some((p, p_c, tiles)) = self.make_move(&next, &dir, c, cost_map) {
-                if p_c <= cost_min {
-                    cost_min = p_c;
-                    ret_path = p;
+        //add the turns
+        heap.push(Node {
+            cost: node.cost + 1000,
+            pos: node.pos,
+            dir: node.dir.turn_left().unwrap(),
+            path: node.path.clone(),
+        });
+        heap.push(Node {
+            cost: node.cost + 1000,
+            pos: node.pos,
+            dir: node.dir.turn_right().unwrap(),
+            path: node.path.clone(),
+        });
 
-                    all_c[0] = p_c;
-                    all_t[0] = tiles;
-                }
-            }
-
-            if let Some((p, p_c, tiles)) =
-                self.make_move(&next, &(dir.turn_left().unwrap()), c + 1000, cost_map)
-            {
-                if p_c <= cost_min {
-                    cost_min = p_c;
-                    ret_path = p;
-
-                    all_c[1] = p_c;
-                    all_t[1] = tiles;
-                }
-            }
-
-            if let Some((p, p_c, tiles)) =
-                self.make_move(&next, &(dir.turn_right().unwrap()), c + 1000, cost_map)
-            {
-                if p_c <= cost_min {
-                    cost_min = p_c;
-                    ret_path = p;
-
-                    all_c[2] = p_c;
-                    all_t[2] = tiles;
-                }
-            }
-            if cost_min != MAX {
-                let mut tiles: HashSet<Point> = HashSet::new();
-                if let Some(&min) = all_c.iter().min() {
-                    let indices: Vec<usize> = all_c
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(index, &value)| if value == min { Some(index) } else { None })
-                        .collect();
-                    for idx in &indices {
-                        for e in &all_t[*idx] {
-                            tiles.insert(*e);
+        if maze.is_move_valid(&node.pos, &node.dir) {
+            if let Some(next) = node.pos + node.dir {
+                if next == *end {
+                    if node.cost + 1 < best_path_cost {
+                        best_path_cost = node.cost + 1;
+                        best_path = node.path;
+                        best_path.push(next);
+                        let mut hs: HashSet<Point> = HashSet::new();
+                        for e in &best_path {
+                            hs.insert(*e);
+                        }
+                        best_path_collection.insert(node.cost+1, hs);
+                    }
+                    else if node.cost+1 == best_path_cost {
+                        if let Some(hs) = best_path_collection.get_mut(&best_path_cost){
+                            for e in &node.path {
+                                hs.insert(*e);
+                            }
                         }
                     }
-                }
-
-                tiles.insert(next.clone());
-                ret_path.push(next);
-                return Some((ret_path, cost_min, tiles));
-            }
-        }
-
-        None
-    }
-
-    fn solve(self: &Self) -> (Vec<Point>, usize, usize) {
-        let mut path: Vec<Point> = Vec::new();
-        let mut cost: usize = MAX;
-        let mut tiles: HashSet<Point> = HashSet::new();
-
-        let mut cost_map: Box<Vec<[usize; 4]>> =
-            Box::new(vec![[MAX; 4]; self.maze.len() * self.maze[0].len()]);
-
-        let mut all_c: [usize; 4] = [MAX, MAX, MAX, MAX];
-        let mut all_t: [HashSet<Point>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
-
-        cost_map[self.start.0.y + self.start.0.x * self.maze.len()]
-            [self.start.1.to_idx().unwrap()] = 0;
-        if let Some((p, c, t)) = self.make_move(&self.start.0, &self.start.1, 0, &mut cost_map) {
-            if c <= cost {
-                cost = c;
-                path = p;
-                path.push(self.start.0);
-
-                all_c[0] = c;
-                all_t[0] = t;
-            }
-        }
-
-        let mut turn = self.start.1.turn_left().unwrap();
-        cost_map[self.start.0.y + self.start.0.x * self.maze.len()][turn.to_idx().unwrap()] = 1000;
-        if let Some((p, c, t)) = self.make_move(&self.start.0, &turn, 1000, &mut cost_map) {
-            if c <= cost {
-                cost = c;
-                path = p;
-                path.push(self.start.0);
-
-                all_c[1] = c;
-                all_t[1] = t;
-            }
-        }
-        turn = turn.turn_left().unwrap();
-        cost_map[self.start.0.y + self.start.0.x * self.maze.len()][turn.to_idx().unwrap()] = 2000;
-        if let Some((p, c, t)) = self.make_move(&self.start.0, &turn, 2000, &mut cost_map) {
-            if c <= cost {
-                cost = c;
-                path = p;
-                path.push(self.start.0);
-
-                all_c[2] = c;
-                all_t[2] = t;
-            }
-        }
-
-        turn = self.start.1.turn_right().unwrap();
-        cost_map[self.start.0.y + self.start.0.x * self.maze.len()][turn.to_idx().unwrap()] = 1000;
-        if let Some((p, c, t)) = self.make_move(&self.start.0, &turn, 1000, &mut cost_map) {
-            if c <= cost {
-                cost = c;
-                path = p;
-                path.push(self.start.0);
-
-                all_c[3] = c;
-                all_t[3] = t;
-            }
-        }
-
-        if let Some(&min) = all_c.iter().min() {
-            let indices: Vec<usize> = all_c
-                .iter()
-                .enumerate()
-                .filter_map(|(index, &value)| if value == min { Some(index) } else { None })
-                .collect();
-            for idx in &indices {
-                for e in &all_t[*idx] {
-                    tiles.insert(*e);
+                } else if maze[next.y][next.x] != '#' {
+                    heap.push(Node {
+                        cost: node.cost + 1,
+                        pos: next,
+                        dir: node.dir,
+                        path: node.path.clone(),
+                    });
                 }
             }
         }
-
-        tiles.insert(self.start.0);
-
-        path.reverse();
-        
-        //println!("{:?}", path);
-        
-        //let mut grid = self.maze.clone();
-        //for i in &tiles {
-        //    grid[i.y][i.x] = 'O';
-        //}
-        //println!("{}", grid);
-
-        (path, cost, tiles.len())
     }
-}
 
-fn solve_maze(maze: &Maze) -> (usize, usize) {
-    let (p, s, t) =maze.solve();
-    (s, t)
+    if let Some(tiles) = best_path_collection.get(&best_path_cost){
+        unique_tiles = tiles.len();
+    }
+    (best_path_cost, unique_tiles)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -225,19 +158,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut y: usize = 0;
 
-    let mut start: Point = Point { y: 0, x: 0 };
-    let mut end: Point = Point { y: 0, x: 0 };
+    let mut start_p: Point = Point { y: 0, x: 0 };
+    let mut end_p: Point = Point { y: 0, x: 0 };
 
     for line in fs::read_to_string(file_path)?.lines() {
         if line.len() > 0 {
             let cs: Vec<_> = line.chars().collect();
 
             if let Some(x) = cs.iter().position(|&c| c == 'S') {
-                start = Point { y: y, x: x };
+                start_p = Point { y: y, x: x };
             }
 
             if let Some(x) = cs.iter().position(|&c| c == 'E') {
-                end = Point { y: y, x: x };
+                end_p = Point { y: y, x: x };
             }
 
             maze.push(cs);
@@ -245,21 +178,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         y += 1;
     }
 
-    let mut maze: Maze = Maze {
-        start: (start, Direction { x: 1, y: 0 }),
-        end: end,
-        maze: maze,
-    };
-
     println!("{}", maze);
 
     let start = Instant::now();
-    let (score, tiles) = solve_maze(&maze);
+    let (score, tiles) = solve_maze(&maze, &start_p, &Direction { x: 1, y: 0 }, &end_p);
     let duration = start.elapsed();
-    println!("Solution: score {}; tiles {} | {}s", score, tiles, duration.as_secs_f32());
+    println!("Score: {}, Tiles: {tiles}| {}s", score, duration.as_secs_f32());
 
     //let start = Instant::now();
-//
+    //
     //let duration = start.elapsed();
     //println!("Part2: {} | {}s", 2, duration.as_secs_f32());
 

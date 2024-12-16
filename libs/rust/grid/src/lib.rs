@@ -1,6 +1,7 @@
 use std::fmt;
 use std::ops::{Add, Mul, Sub};
 use std::ops::{Deref, DerefMut};
+use std::cmp::Ordering;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Grid(Vec<Vec<char>>);
@@ -104,6 +105,21 @@ impl Direction {
             Direction { x: 1, y: 1 } => Some(7),
             _ => None,
         }
+    }
+}
+
+impl Ord for Direction {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.y.cmp(&other.y) {
+            Ordering::Equal => self.x.cmp(&other.x),
+            other_order => other_order,
+        }
+    }
+}
+
+impl PartialOrd for Direction {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -238,6 +254,22 @@ impl Mul<usize> for Point {
             x: self.x * scalar,
             y: self.y * scalar,
         }
+    }
+}
+
+impl Ord for Point {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Compare by x-coordinate first, then by y-coordinate
+        match self.x.cmp(&other.x) {
+            Ordering::Equal => self.y.cmp(&other.y),
+            other_order => other_order,
+        }
+    }
+}
+
+impl PartialOrd for Point {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
