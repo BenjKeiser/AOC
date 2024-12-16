@@ -38,9 +38,8 @@ impl Maze {
         dir: &Direction,
         path: &Vec<Point>,
         cost: usize,
-        cost_map: &mut HashMap<(Point, Direction), usize>,
+        cost_map: &mut Vec<Vec<Vec<usize>>>,
     ) -> Option<(Vec<Point>, usize)> {
-        let mut new_path: Vec<Point> = path.clone();
         if self.maze.is_move_valid(pos, dir) {
             let next: Point = (*pos + dir).unwrap();
             let c = cost + 1;
@@ -50,20 +49,16 @@ impl Maze {
             }
 
             //update cost matrix
-            if let Some(current_value) = cost_map.get_mut(&(next, *dir)) {
-                if *current_value > c {
-                    *current_value = c;
-                } else {
-                    //we were already here but cheaper -> we can stop
-                    return None;
-                }
-            } else {
-                cost_map.insert((next, *dir), c);
+            if cost_map[next.y][next.x][dir.to_idx().unwrap()] < c {
+                //we were already here but cheaper -> we can stop
+                return None;
             }
+            cost_map[next.y][next.x][dir.to_idx().unwrap()] = c;
 
+            let mut new_path: Vec<Point> = path.clone();
             //check if end is reached
-            new_path.push(next);
             if next == self.end {
+                new_path.push(next);
                 return Some((new_path, c));
             }
 
@@ -114,9 +109,10 @@ impl Maze {
         let mut path: Vec<Point> = Vec::new();
         let mut cost: usize = MAX;
 
-        let mut cost_map: HashMap<(Point, Direction), usize> = HashMap::new();
+        let mut cost_map: Vec<Vec<Vec<usize>>> =
+            vec![vec![vec![MAX; 4]; self.maze[0].len()]; self.maze.len()];
 
-        cost_map.insert(self.start, 0);
+        cost_map[self.start.0.y][self.start.0.x][self.start.1.to_idx().unwrap()] = 0;
         if let Some((p, c)) =
             self.make_move(&self.start.0, &self.start.1, &Vec::new(), 0, &mut cost_map)
         {
@@ -125,30 +121,20 @@ impl Maze {
                 path = p;
             }
         }
-        
+
         let mut turn = self.start.1.turn_left().unwrap();
-        cost_map.insert((self.start.0, turn), 1000);
-        if let Some((p, c)) = self.make_move(
-            &self.start.0,
-            &turn,
-            &Vec::new(),
-            1000,
-            &mut cost_map,
-        ) {
+        cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 1000;
+        if let Some((p, c)) = self.make_move(&self.start.0, &turn, &Vec::new(), 1000, &mut cost_map)
+        {
             if c < cost {
                 cost = c;
                 path = p;
             }
         }
         turn = turn.turn_left().unwrap();
-        cost_map.insert((self.start.0, turn), 2000);
-        if let Some((p, c)) = self.make_move(
-            &self.start.0,
-            &turn,
-            &Vec::new(),
-            2000,
-            &mut cost_map,
-        ) {
+        cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 2000;
+        if let Some((p, c)) = self.make_move(&self.start.0, &turn, &Vec::new(), 2000, &mut cost_map)
+        {
             if c < cost {
                 cost = c;
                 path = p;
@@ -156,14 +142,9 @@ impl Maze {
         }
 
         turn = turn.turn_right().unwrap();
-        cost_map.insert((self.start.0, turn), 1000);
-        if let Some((p, c)) = self.make_move(
-            &self.start.0,
-            &turn,
-            &Vec::new(),
-            1000,
-            &mut cost_map,
-        ) {
+        cost_map[self.start.0.y][self.start.0.x][turn.to_idx().unwrap()] = 1000;
+        if let Some((p, c)) = self.make_move(&self.start.0, &turn, &Vec::new(), 1000, &mut cost_map)
+        {
             if c < cost {
                 cost = c;
                 path = p;

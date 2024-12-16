@@ -91,6 +91,20 @@ impl Direction {
             _ => None,
         }
     }
+
+    pub fn to_idx(self: & Self) -> Option<usize> {
+        match self {
+            Direction { x: -1, y: 0 } => Some(0),
+            Direction { x: 0, y: -1 } => Some(1),
+            Direction { x: 1, y: 0 } => Some(2),
+            Direction { x: 0, y: 1 } => Some(3),
+            Direction { x: -1, y: -1 } => Some(4),
+            Direction { x: 1, y: -1 } => Some(5),
+            Direction { x: -1, y: 1 } => Some(6),
+            Direction { x: 1, y: 1 } => Some(7),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for Direction {
