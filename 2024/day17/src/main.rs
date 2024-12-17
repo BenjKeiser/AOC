@@ -204,12 +204,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         out_str += ",";
     }
     out_str.pop(); // remove the last comma
-    println!("Part1: {} | {}s", out_str, duration.as_secs_f32());
+    println!("Part1: {out_str} | {}s {}ms {}µs {}ns", duration.as_secs(), duration.subsec_millis(), duration.subsec_micros() % 1000, duration.subsec_nanos() % 1000);
 
     let start = Instant::now();
     let ra = comp2.get_copy();
     let duration = start.elapsed();
-    println!("Part2: {} | {}s", ra, duration.as_secs_f32());
+    println!("Part2: {ra} | {}s {}ms {}µs {}ns", duration.as_secs(), duration.subsec_millis(), duration.subsec_micros() % 1000, duration.subsec_nanos() % 1000);
 
     Ok(())
 }
