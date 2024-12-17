@@ -76,6 +76,37 @@ impl Computer {
         }
     }
 
+    fn get_copy(self: &Self) -> u64 {
+        let mut out: Vec<u8>;
+        let mut idx: u64;
+        let mut reg_a = 8_u64.pow(self.prog.len() as u32 - 1);  // digits of the solution increase with a factor of 8
+        loop {
+            let mut comp = self.clone();
+            comp.a = reg_a;
+
+            out = comp.run_prog();
+            if out.len() != self.prog.len(){
+                println!("This is not expected! {reg_a}");
+                println!("out: {:?}", out);
+                println!("Prog: {:?}", self.prog);
+                break;
+            }
+            else {
+                if out == self.prog {
+                    break;
+                }
+                idx = 0;
+                for (i, el) in out.iter().enumerate() {
+                    if *el != self.prog[i] {
+                        idx += 8_u64.pow(i as u32) / 8;
+                    }
+                }
+            }
+            reg_a += idx.max(1);
+        }
+        reg_a
+    }
+
     fn run_prog(self: &mut Self) -> Vec<u8> {
         let mut out: Vec<u8> = Vec::new();
         let mut instr_ptr: usize = 0;
@@ -162,6 +193,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     println!("{comp}");
 
+    let comp2 = comp.clone();
 
     let start = Instant::now();
     let out = comp.run_prog();
@@ -174,6 +206,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     out_str.pop(); // remove the last comma
     println!("Part1: {} | {}s", out_str, duration.as_secs_f32());
 
+    let start = Instant::now();
+    let ra = comp2.get_copy();
+    let duration = start.elapsed();
+    println!("Part2: {} | {}s", ra, duration.as_secs_f32());
 
     Ok(())
 }
