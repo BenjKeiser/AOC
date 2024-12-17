@@ -98,7 +98,7 @@ impl Computer {
                 idx = 0;
                 for (i, el) in out.iter().enumerate() {
                     if *el != self.prog[i] {
-                        idx += 8_u64.pow(i as u32) / 8;
+                        idx = 8_u64.pow(i as u32);
                     }
                 }
             }
