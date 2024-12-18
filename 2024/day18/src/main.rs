@@ -57,11 +57,10 @@ fn get_steps(memory: &Grid, start: &Point, end: &Point) -> usize {
         pos: *start,
         path: Vec::new(),
     });
-    visited[start.y][start.x] = 0;
 
     while let Some(mut node) = heap.pop() {
         //Skip nodes that have been processed with shorter paths
-        if node.cost > visited[node.pos.y][node.pos.x] {
+        if node.cost >= visited[node.pos.y][node.pos.x] {
             continue;
         }
         visited[node.pos.y][node.pos.x] = node.cost;
@@ -87,7 +86,6 @@ fn get_steps(memory: &Grid, start: &Point, end: &Point) -> usize {
     }
 
     let mut grid = memory.clone();
-
     for i in &best_path {
         grid[i.y][i.x] = 'O';
     }
