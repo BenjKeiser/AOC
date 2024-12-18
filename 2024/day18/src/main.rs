@@ -81,7 +81,7 @@ fn get_steps(memory: &Grid, start: &Point, end: &Point) -> usize {
     best_path_cost
 }
 
-fn drop_ram(mem: &Grid, ram: &Vec<Point>, amount: usize) -> Grid {
+fn drop_ram(mem: &Grid, ram: &[Point], amount: usize) -> Grid {
     let mut memory = mem.clone();
     for i in 0..amount {
         memory[ram[i].y][ram[i].x] = '#';
@@ -89,7 +89,7 @@ fn drop_ram(mem: &Grid, ram: &Vec<Point>, amount: usize) -> Grid {
     memory
 }
 
-fn get_blocking_coordinates(memory: &Grid, ram: &Vec<Point>, start: &Point, end: &Point) -> Point {
+fn get_blocking_coordinates(memory: &Grid, ram: &[Point], start: &Point, end: &Point) -> Point {
 
     let mut left_idx: usize = 0;
     let mut right_idx: usize = ram.len();
