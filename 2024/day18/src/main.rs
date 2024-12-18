@@ -12,7 +12,6 @@ use std::usize::MAX;
 pub struct Node {
     cost: usize,
     pos: Point,
-    path: Vec<Point>,
 }
 
 // Custom ordering for the priority queue (min-heap based on cost)
@@ -49,28 +48,23 @@ fn get_steps(memory: &Grid, start: &Point, end: &Point) -> usize {
     let mut heap: BinaryHeap<Node> = BinaryHeap::new();
 
     let mut best_path_cost = MAX;
-    let mut best_path: Vec<Point> = Vec::new();
 
     //push start element
     heap.push(Node {
         cost: 0,
         pos: *start,
-        path: Vec::new(),
     });
 
-    while let Some(mut node) = heap.pop() {
+    while let Some(node) = heap.pop() {
         //Skip nodes that have been processed with shorter paths
         if node.cost >= visited[node.pos.y][node.pos.x] {
             continue;
         }
         visited[node.pos.y][node.pos.x] = node.cost;
 
-        node.path.push(node.pos);
-
         if node.pos == *end {
             if node.cost < best_path_cost {
                 best_path_cost = node.cost;
-                best_path = node.path.clone();
             }
         }
 
@@ -79,17 +73,10 @@ fn get_steps(memory: &Grid, start: &Point, end: &Point) -> usize {
                 heap.push(Node {
                     cost: node.cost + 1,
                     pos: next,
-                    path: node.path.clone(),
                 });
             }
         }
     }
-
-    let mut grid = memory.clone();
-    for i in &best_path {
-        grid[i.y][i.x] = 'O';
-    }
-    println!("{grid}");
 
     best_path_cost
 }
@@ -100,6 +87,29 @@ fn drop_ram(mem: &Grid, ram: &Vec<Point>, amount: usize) -> Grid {
         memory[ram[i].y][ram[i].x] = '#';
     }
     memory
+}
+
+fn get_blocking_coordinates(memory: &Grid, ram: &Vec<Point>, start: &Point, end: &Point) -> Point {
+
+    let mut left_idx: usize = 0;
+    let mut right_idx: usize = ram.len();
+    let mut x = ram.len() / 2;
+
+    loop {
+
+        let mem = drop_ram(memory, ram, x);
+        let steps = get_steps(&mem, start, end);
+        if steps < MAX {
+            //it finishes
+            left_idx = x;
+            x = right_idx  
+        }
+        else {
+            //doesn't finish
+        }
+    }
+
+    ram[0]
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
