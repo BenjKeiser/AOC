@@ -93,23 +93,26 @@ fn get_blocking_coordinates(memory: &Grid, ram: &Vec<Point>, start: &Point, end:
 
     let mut left_idx: usize = 0;
     let mut right_idx: usize = ram.len();
-    let mut x = ram.len() / 2;
 
     loop {
-
+        let x = (left_idx + right_idx) / 2;
         let mem = drop_ram(memory, ram, x);
         let steps = get_steps(&mem, start, end);
+        if left_idx == right_idx {
+            break;
+        }
         if steps < MAX {
             //it finishes
-            left_idx = x;
-            x = right_idx  
+            left_idx = x + 1;
         }
         else {
             //doesn't finish
+            right_idx = x;
         }
     }
 
-    ram[0]
+    println!("IDX => {}", left_idx - 1);
+    ram[left_idx - 1]
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -145,10 +148,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         duration.subsec_nanos() % 1000
     );
 
-    //let start = Instant::now();
-    //
-    //let duration = start.elapsed();
-    //println!("Part2: {} | {}s", 2, duration.as_secs_f32());
-
+    let start = Instant::now();
+    let coords = get_blocking_coordinates(&memory, &ram, &start_p, &end_p);
+    let duration = start.elapsed();
+    println!(
+        "Part2: {},{} | {}s {}ms {}µs {}ns",
+        coords.x, coords.y,
+        duration.as_secs(),
+        duration.subsec_millis(),
+        duration.subsec_micros() % 1000,
+        duration.subsec_nanos() % 1000
+    );
     Ok(())
 }
