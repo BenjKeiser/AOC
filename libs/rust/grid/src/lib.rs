@@ -1,10 +1,21 @@
+use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Add, Mul, Sub};
 use std::ops::{Deref, DerefMut};
-use std::cmp::Ordering;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Grid(Vec<Vec<char>>);
+
+static DIRECTIONS: &'static [Direction] = &[
+    Direction { x: 0, y: -1 },
+    Direction { x: 1, y: 0 },
+    Direction { x: 0, y: 1 },
+    Direction { x: -1, y: 0 },
+    Direction { x: -1, y: -1 },
+    Direction { x: 1, y: -1 },
+    Direction { x: -1, y: 1 },
+    Direction { x: 1, y: 1 },
+];
 
 impl Grid {
     /// Creates a new, empty Grid
@@ -30,6 +41,24 @@ impl Grid {
             Direction { x: 1, y: 1 } => pos.x < self[0].len() - 1 && pos.y < self.len() - 1,
             _ => false,
         }
+    }
+
+    pub fn get_neighbours(&self, pos: &Point, diag: bool) -> Vec<Point> {
+        let mut neighbours: Vec<Point> = Vec::new();
+        for dir in DIRECTIONS {
+            if dir.x == 0 || dir.y == 0 {
+                if self.is_move_valid(pos, dir) {
+                    neighbours.push((*pos + dir).unwrap());
+                }
+            } else {
+                if diag {
+                    if self.is_move_valid(pos, dir) {
+                        neighbours.push((*pos + dir).unwrap());
+                    }
+                }
+            }
+        }
+        neighbours
     }
 }
 
@@ -93,7 +122,7 @@ impl Direction {
         }
     }
 
-    pub fn to_idx(self: & Self) -> Option<usize> {
+    pub fn to_idx(self: &Self) -> Option<usize> {
         match self {
             Direction { x: -1, y: 0 } => Some(0),
             Direction { x: 0, y: -1 } => Some(1),
