@@ -12,21 +12,13 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-fn match_pattern(pattern: &str, towel: &str) -> bool {
-    if pattern.len() >= towel.len() {
-        &pattern[..towel.len()] == towel
-    } else {
-        false
-    }
-}
-
 fn match_towels(pattern: &str, towels: &[&str]) -> bool {
     if pattern.len() == 0 {
         return true;
     }
 
     for t in towels {
-        if match_pattern(pattern, *t) {
+        if pattern.starts_with(*t) {
             if match_towels(&pattern[(*t).len()..], towels) {
                 return true;
             }
@@ -36,13 +28,7 @@ fn match_towels(pattern: &str, towels: &[&str]) -> bool {
 }
 
 fn get_possible_patterns(towels: &[&str], patterns: &[&str]) -> usize {
-    let mut possible = 0;
-    for p in patterns {
-        if match_towels(*p, towels) {
-            possible += 1;
-        }
-    }
-    possible
+    patterns.iter().filter(|&&x| match_towels(x, towels)).count()
 }
 
 fn match_all_towels(pattern: &str, towels: &[&str], results: &mut HashMap<String, usize>) -> usize {
@@ -51,7 +37,7 @@ fn match_all_towels(pattern: &str, towels: &[&str], results: &mut HashMap<String
         matches += 1;
     } else {
         for t in towels {
-            if match_pattern(pattern, *t) {
+            if pattern.starts_with(*t) {
                 let p = pattern[(*t).len()..].to_string();
                 if let Some(val) = results.get(&p) {
                     matches += *val;
@@ -69,13 +55,8 @@ fn match_all_towels(pattern: &str, towels: &[&str], results: &mut HashMap<String
 }
 
 fn get_all_possibilities(towels: &[&str], patterns: &[&str]) -> usize {
-    let mut sum = 0;
     let mut results: HashMap<String, usize> = HashMap::new();
-    for p in patterns {
-        let res = match_all_towels(*p, towels, &mut results);
-        sum += res;
-    }
-    sum
+    patterns.iter().map(|&x| match_all_towels(x, towels, &mut results)).sum()
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
