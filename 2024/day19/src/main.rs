@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
@@ -41,8 +42,40 @@ fn get_possible_patterns(towels: &[&str], patterns: &[&str]) -> usize {
             possible += 1;
         }
     }
-
     possible
+}
+
+fn match_all_towels(pattern: &str, towels: &[&str], results: &mut HashMap<String, usize>) -> usize {
+    let mut matches = 0;
+    if pattern.len() == 0 {
+        matches += 1;
+    } else {
+        for t in towels {
+            if match_pattern(pattern, *t) {
+                let p = pattern[(*t).len()..].to_string();
+                if let Some(val) = results.get(&p) {
+                    matches += *val;
+                }
+                else {
+                    let val = match_all_towels(&p, towels, results);
+                    matches += val;
+                    results.insert(p, val);
+                }
+            }
+        }
+    }
+
+    matches
+}
+
+fn get_all_possibilities(towels: &[&str], patterns: &[&str]) -> usize {
+    let mut sum = 0;
+    let mut results: HashMap<String, usize> = HashMap::new();
+    for p in patterns {
+        let res = match_all_towels(*p, towels, &mut results);
+        sum += res;
+    }
+    sum
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -63,11 +96,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let start = Instant::now();
-    let patterns = get_possible_patterns(&towels, &patterns);
+    let pats = get_possible_patterns(&towels, &patterns);
     let duration = start.elapsed();
     println!(
         "Part1: {} | {}s {}ms {}µs {}ns",
-        patterns,
+        pats,
         duration.as_secs(),
         duration.subsec_millis(),
         duration.subsec_micros() % 1000,
@@ -75,11 +108,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let start = Instant::now();
-
+    let all_patterns = get_all_possibilities(&towels, &patterns);
     let duration = start.elapsed();
     println!(
         "Part2: {} | {}s {}ms {}µs {}ns",
-        2,
+        all_patterns,
         duration.as_secs(),
         duration.subsec_millis(),
         duration.subsec_micros() % 1000,
