@@ -11,39 +11,24 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-fn get_splits(pattern: &str, towels: &[&str]) -> Option<(bool, Vec<(String, String)>)> {
-    let mut splits: Vec<(String, String)> = Vec::new();
-
-    //println!("get_splits {pattern}");
-    for t in towels {
-        if let Some((lhs, rhs)) = pattern.split_once(*t) {
-            //println!("{} => {} & {}", *t, lhs, rhs);
-            if lhs.len() == 0 && rhs.len() == 0 {
-                return Some((true, splits));
-            } else {
-                splits.push((lhs.to_string(), rhs.to_string()));
-            }
-        }
+fn match_pattern(pattern: &str, towel: &str) -> bool {
+    if pattern.len() >= towel.len() {
+        &pattern[..towel.len()] == towel
+    } else {
+        false
     }
-
-    if splits.len() == 0 {
-        return None;
-    }
-
-    Some((false, splits))
 }
 
-fn is_possible(pattern: &str, towels: &[&str]) -> bool {
-    if let Some((possible, next)) = get_splits(pattern, towels) {
-        if possible {
-            return true;
-        }
-        else {
-            for (lhs, rhs) in next {
-                if (lhs.len() == 0 || is_possible(&lhs, towels)) && (rhs.len() == 0 || is_possible(&rhs, towels)) {
-                    return true;
-                }
-            }            
+fn match_towels(pattern: &str, towels: &[&str]) -> bool {
+    if pattern.len() == 0 {
+        return true;
+    }
+
+    for t in towels {
+        if match_pattern(pattern, *t) {
+            if match_towels(&pattern[(*t).len()..], towels) {
+                return true;
+            }
         }
     }
     false
@@ -52,7 +37,7 @@ fn is_possible(pattern: &str, towels: &[&str]) -> bool {
 fn get_possible_patterns(towels: &[&str], patterns: &[&str]) -> usize {
     let mut possible = 0;
     for p in patterns {
-        if is_possible(*p, towels) {
+        if match_towels(*p, towels) {
             possible += 1;
         }
     }
