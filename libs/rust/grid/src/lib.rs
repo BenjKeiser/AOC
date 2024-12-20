@@ -60,6 +60,10 @@ impl Grid {
         }
         neighbours
     }
+
+    pub fn is_boundary(&self, pos: &Point) -> bool {
+        pos.y == 0 || pos.y == self.len() - 1 || pos.x == 0 || pos.x == self[0].len()
+    }
 }
 
 impl Deref for Grid {
