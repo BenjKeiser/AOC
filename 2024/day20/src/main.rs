@@ -112,15 +112,6 @@ fn get_nb_better_cheats(
                 cost_map_ac.insert(*e, end_cost);
             }
             if (start_cost + cheat_cost + end_cost) <= to_beat {
-                /*println!(
-                    "{} {} => {} {} {} = {}",
-                    c,
-                    e,
-                    start_cost,
-                    cheat_cost,
-                    end_cost,
-                    (start_cost + cheat_cost + end_cost)
-                ); */
                 better_cheats += 1;
             }
         }
@@ -129,76 +120,19 @@ fn get_nb_better_cheats(
     better_cheats
 }
 
-fn walk_wall(track: &Grid, pos: &Point, len: usize) -> Vec<(Point, usize)> {
-    let mut exits: Vec<(Point, usize)> = Vec::new();
-    let mut exit_map: HashMap<Point, usize> = HashMap::new();
-    let mut queue: Vec<(Point, usize)> = Vec::new();
-    let mut visited: HashMap<Point, usize> = HashMap::new();
-
-    queue.push((*pos, 1));
-
-    while !queue.is_empty() {
-        if let Some((p, c)) = queue.pop() {
-            if let Some(value) = visited.get(&p) {
-                if c > *value {
-                    continue;
-                }
-            }
-
-            visited.insert(p, c);
-            let cost = c + 1;
-            if cost <= len {
-                let neighbours = track.get_neighbours(&p, false);
-                for p in neighbours {
-                    if track[p.y][p.x] != '#' {
-                        exit_map
-                            .entry(p)
-                            .and_modify(|old_v| {
-                                if cost < *old_v {
-                                    *old_v = cost;
-                                }
-                            })
-                            .or_insert(cost);
-                    } else {
-                        queue.push((p, cost));
-                    }
-                }
-            }
-        }
-    }
-
-    for (k, v) in exit_map {
-        exits.push((k, v));
-    }
-
-    exits
-}
-
 fn get_cheats(track: &Grid, duration: usize) -> Vec<(Point, Vec<(Point, usize)>)> {
     let mut cheats: Vec<_> = Vec::new();
     for (y, row) in track.iter().enumerate() {
         for (x, b) in row.iter().enumerate() {
             if *b != '#' {
-                //do the wall walk for all neighbours which are a wall
-                let neighbours = track.get_neighbours(&Point { y: y, x: x }, false);
-                let mut all_exits = Vec::new();
-                for n in neighbours
+                let coord = Point { y: y, x: x };
+                let reachable = track
+                    .get_reachable(&coord, duration)
                     .iter()
-                    .filter(|&p| track[p.y][p.x] == '#' && !track.is_boundary(p))
-                {
-                    let exits = walk_wall(track, n, duration);
-                    //we need at least two exits for a valid path
-                    if exits.len() >= 2 {
-                        for (e, c) in exits {
-                            if e != (Point { y: y, x: x }) {
-                                if !all_exits.contains(&(e, c)) {
-                                    all_exits.push((e, c));
-                                }
-                            }
-                        }
-                    }
-                }
-                cheats.push((Point { y: y, x: x }, all_exits));
+                    .filter(|&(p, _)| track[p.y][p.x] != '#')
+                    .map(|&x| x)
+                    .collect::<Vec<(Point, usize)>>();
+                cheats.push((coord, reachable));
             }
         }
     }
@@ -247,7 +181,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         duration.subsec_nanos() % 1000
     );
 
-    /*
     let start = Instant::now();
     let all_cheats = get_cheats(&track, 20);
     let cheats = get_nb_better_cheats(&track, &start_p, &end_p, &all_cheats, time_to_beat - 100);
@@ -259,6 +192,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         duration.subsec_micros() % 1000,
         duration.subsec_nanos() % 1000
     );
-    */
+
     Ok(())
 }
