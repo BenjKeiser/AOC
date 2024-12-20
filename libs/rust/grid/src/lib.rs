@@ -64,6 +64,31 @@ impl Grid {
     pub fn is_boundary(&self, pos: &Point) -> bool {
         pos.y == 0 || pos.y == self.len() - 1 || pos.x == 0 || pos.x == self[0].len()
     }
+
+    pub fn get_reachable(&self, pos: &Point, steps: usize) -> Vec<(Point, usize)>{
+        let mut reachable: Vec<_> = Vec::new();
+        
+        let max_range = steps as isize;
+
+        // Iterate over all points in the bounding box around the circle
+        for dx in -max_range..=max_range {
+            for dy in -max_range..=max_range {
+                let new_x = pos.x as isize + dx;
+                let new_y = pos.y as isize + dy;
+
+                // Check grid bounds
+                if new_x >= 0 && new_y >= 0 && new_x < self[0].len() as isize && new_y < self.len() as isize {
+                    // Check if the point lies within the circle (Manhattan distance)
+                    let st = (dx.abs() + dy.abs()) as usize;
+                    if st <= steps {
+                        reachable.push((Point { x: new_x as usize, y: new_y as usize}, st));
+                    }
+                }
+            }
+        }
+
+        reachable
+    }
 }
 
 impl Deref for Grid {
