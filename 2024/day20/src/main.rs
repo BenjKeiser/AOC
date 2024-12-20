@@ -149,7 +149,7 @@ fn number_of_cheats(track: &Grid, start: &Point, end: &Point, to_beat: usize, st
 
     while !queue.is_empty() {
         if let Some((node, cost)) = queue.pop() {
-            if map[node.y][node.x] > 0 && cost > map[node.y][node.x] {
+            if map[node.y][node.x] >= 0 && cost > map[node.y][node.x] {
                 continue;
             }
             map[node.y][node.x] = cost as i32;
