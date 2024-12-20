@@ -112,15 +112,6 @@ fn get_nb_better_cheats(
                 cost_map_ac.insert(*e, end_cost);
             }
             if (start_cost + cheat_cost + end_cost) <= to_beat {
-                /*println!(
-                    "{} {} => {} {} {} = {}",
-                    c,
-                    e,
-                    start_cost,
-                    cheat_cost,
-                    end_cost,
-                    (start_cost + cheat_cost + end_cost)
-                ); */
                 better_cheats += 1;
             }
         }
