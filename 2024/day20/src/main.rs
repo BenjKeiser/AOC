@@ -1,6 +1,7 @@
 use grid::{Grid, Point};
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
@@ -42,14 +43,8 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
 }
 
 //use dijkstra
-fn get_seconds(
-    memory: &Grid,
-    start: &Point,
-    end: &Point,
-    cheat: &Point,
-    to_beat: usize,
-) -> Option<usize> {
-    let mut visited: Vec<Vec<usize>> = vec![vec![MAX; memory[0].len()]; memory.len()];
+fn dijkstra(track: &Grid, start: &Point, end: &Point) -> usize {
+    let mut visited: Vec<Vec<usize>> = vec![vec![MAX; track[0].len()]; track.len()];
 
     let mut heap: BinaryHeap<Node> = BinaryHeap::new();
 
@@ -68,19 +63,14 @@ fn get_seconds(
         }
         visited[node.pos.y][node.pos.x] = node.cost;
 
-        //we did not manage to beat the clock -> return early
-        if node.cost > to_beat {
-            return None;
-        }
-
         if node.pos == *end {
             if node.cost < best_path_cost {
                 best_path_cost = node.cost;
             }
         }
 
-        for next in memory.get_neighbours(&node.pos, false) {
-            if memory[next.y][next.x] != '#' || next == *cheat {
+        for next in track.get_neighbours(&node.pos, false) {
+            if track[next.y][next.x] != '#' || next == *end {
                 heap.push(Node {
                     cost: node.cost + 1,
                     pos: next,
@@ -89,25 +79,126 @@ fn get_seconds(
         }
     }
 
-    Some(best_path_cost)
+    best_path_cost
 }
 
-fn get_cheats(track: &Grid) -> Vec<Point> {
-    let mut cheats: Vec<Point> = Vec::new();
-    for (y, row) in track.iter().enumerate() {
-        for (x, b) in row.iter().enumerate() {
-            if !track.is_boundary(&Point { y: y, x: x }) {
-                if *b == '#' {
-                    let neighbours = track.get_neighbours(&Point { y: y, x: x }, false);
-                    if neighbours
-                        .iter()
-                        .filter(|&p| track[p.y][p.x] != '#')
-                        .count()
-                        >= 2
-                    {
-                        cheats.push(Point { x: x, y: y });
+//use dijkstra
+fn get_nb_better_cheats(
+    track: &Grid,
+    start: &Point,
+    end: &Point,
+    cheats: &Vec<(Point, Vec<(Point, usize)>)>,
+    to_beat: usize,
+) -> usize {
+    let mut better_cheats = 0;
+
+    let mut cost_map_bc: HashMap<Point, usize> = HashMap::new();
+    let mut cost_map_ac: HashMap<Point, usize> = HashMap::new();
+
+    for (c, exits) in cheats {
+        let start_cost;
+        if let Some(val) = cost_map_bc.get(c) {
+            start_cost = *val;
+        } else {
+            start_cost = dijkstra(track, start, c);
+            cost_map_bc.insert(*c, start_cost);
+        }
+        for (e, cheat_cost) in exits {
+            let end_cost;
+            if let Some(val) = cost_map_ac.get(e) {
+                end_cost = *val;
+            } else {
+                end_cost = dijkstra(track, e, end);
+                cost_map_ac.insert(*e, end_cost);
+            }
+            if (start_cost + cheat_cost + end_cost) <= to_beat {
+                /*println!(
+                    "{} {} => {} {} {} = {}",
+                    c,
+                    e,
+                    start_cost,
+                    cheat_cost,
+                    end_cost,
+                    (start_cost + cheat_cost + end_cost)
+                ); */
+                better_cheats += 1;
+            }
+        }
+    }
+
+    better_cheats
+}
+
+fn walk_wall(track: &Grid, pos: &Point, len: usize) -> Vec<(Point, usize)> {
+    let mut exits: Vec<(Point, usize)> = Vec::new();
+    let mut exit_map: HashMap<Point, usize> = HashMap::new();
+    let mut queue: Vec<(Point, usize)> = Vec::new();
+    let mut visited: HashMap<Point, usize> = HashMap::new();
+
+    queue.push((*pos, 1));
+
+    while !queue.is_empty() {
+        if let Some((p, c)) = queue.pop() {
+            if let Some(value) = visited.get(&p) {
+                if c > *value {
+                    continue;
+                }
+            }
+
+            visited.insert(p, c);
+            let cost = c + 1;
+            if cost <= len {
+                let neighbours = track.get_neighbours(&p, false);
+                for p in neighbours {
+                    if track[p.y][p.x] != '#' {
+                        exit_map
+                            .entry(p)
+                            .and_modify(|old_v| {
+                                if cost < *old_v {
+                                    *old_v = cost;
+                                }
+                            })
+                            .or_insert(cost);
+                    } else {
+                        queue.push((p, cost));
                     }
                 }
+            }
+        }
+    }
+
+    for (k, v) in exit_map {
+        exits.push((k, v));
+    }
+
+    exits
+}
+
+fn get_cheats(track: &Grid, duration: usize) -> Vec<(Point, Vec<(Point, usize)>)> {
+    let mut cheats: Vec<_> = Vec::new();
+    for (y, row) in track.iter().enumerate() {
+        for (x, b) in row.iter().enumerate() {
+            if *b != '#' {
+                //do the wall walk for all neighbours which are a wall
+                let neighbours = track.get_neighbours(&Point { y: y, x: x }, false);
+                let mut all_exits = Vec::new();
+                for n in neighbours
+                    .iter()
+                    .filter(|&p| track[p.y][p.x] == '#' && !track.is_boundary(p))
+                {
+                    let exits = walk_wall(track, n, duration);
+                    //we need at least two exits for a valid path
+                    if exits.len() >= 2 {
+                        for (e, c) in exits {
+                            if e != (Point { y: y, x: x }) {
+                                if !all_exits.contains(&(e, c)) {
+                                    all_exits.push((e, c));
+                                }
+                            }
+                        }
+                    }
+                }
+                cheats.push((Point { y: y, x: x }, all_exits));
             }
         }
     }
@@ -142,23 +233,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let start = Instant::now();
-    let all_cheats = get_cheats(&track);
-    let mut cheats= 0;
 
-    if let Some(time_to_beat) = get_seconds(&track, &start_p, &end_p, &Point { x: 0, y: 0 }, MAX) {
-        println!("Time To Beat: {time_to_beat}");
-        cheats = 
-            all_cheats
-                .iter()
-                .filter(|&c| {
-                    if let Some(time) = get_seconds(&track, &start_p, &end_p, c, time_to_beat-99) {
-                        100 <= (time_to_beat - time)
-                    } else {
-                        false
-                    }
-                })
-                .count();
-    }
+    let all_cheats = get_cheats(&track, 2);
+    let time_to_beat = dijkstra(&track, &start_p, &end_p);
+    let cheats = get_nb_better_cheats(&track, &start_p, &end_p, &all_cheats, time_to_beat - 100);
+
     let duration = start.elapsed();
     println!(
         "Part1: {cheats} | {}s {}ms {}µs {}ns",
@@ -168,15 +247,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         duration.subsec_nanos() % 1000
     );
 
+    /*
     let start = Instant::now();
-    let dunno = 0;
+    let all_cheats = get_cheats(&track, 20);
+    let cheats = get_nb_better_cheats(&track, &start_p, &end_p, &all_cheats, time_to_beat - 100);
     let duration = start.elapsed();
     println!(
-        "Part2: {dunno} | {}s {}ms {}µs {}ns",
+        "Part2: {cheats} | {}s {}ms {}µs {}ns",
         duration.as_secs(),
         duration.subsec_millis(),
         duration.subsec_micros() % 1000,
         duration.subsec_nanos() % 1000
     );
+    */
     Ok(())
 }
