@@ -139,7 +139,52 @@ fn get_cheats(track: &Grid, duration: usize) -> Vec<(Point, Vec<(Point, usize)>)
     cheats
 }
 
-//todo: Optimize solution -> https://www.reddit.com/r/adventofcode/comments/1hicdtb/comment/m2y3gza/
+fn number_of_cheats(track: &Grid, start: &Point, end: &Point, to_beat: usize, steps: usize) -> usize {
+    let mut map = vec![vec![-1; track[0].len()]; track.len()];
+
+    let mut nb_cheats = 0;
+
+    let mut queue = Vec::new();
+    queue.push((*start, 0));
+
+    while !queue.is_empty() {
+        if let Some((node, cost)) = queue.pop() {
+            if map[node.y][node.x] > 0 && cost > map[node.y][node.x] {
+                continue;
+            }
+            map[node.y][node.x] = cost as i32;
+
+            if node != *end {
+                track.get_neighbours(&node, false).iter().for_each(|x| {
+                    if track[x.y][x.x] != '#' {
+                        queue.push((*x, cost + 1))
+                    }
+                });
+            }
+        }
+    }
+
+    for (y, row) in map.iter().enumerate() {
+        for (x, val) in row.iter().enumerate() {
+            if *val != -1 {
+                let coord = Point { x: x, y: y };
+                let possible_cheats = track.get_reachable(&coord, steps);
+                for (e, c) in possible_cheats {
+                    let end_cost = map[e.y][e.x];
+                    if end_cost != -1 {
+                        let saved = end_cost - map[y][x] - c as i32;
+                        if saved >= to_beat as i32 {
+                            nb_cheats += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    nb_cheats
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let file_path = get_first_arg()?;
 
@@ -166,6 +211,30 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         y += 1;
     }
+
+    let start = Instant::now();
+    let nb_cheats = number_of_cheats(&track, &start_p, &end_p, 100, 2);
+    let duration = start.elapsed();
+    println!(
+        "Part1: {nb_cheats} | {}s {}ms {}µs {}ns",
+        duration.as_secs(),
+        duration.subsec_millis(),
+        duration.subsec_micros() % 1000,
+        duration.subsec_nanos() % 1000
+    );
+
+    let start = Instant::now();
+    let nb_cheats = number_of_cheats(&track, &start_p, &end_p, 100, 20);
+    let duration = start.elapsed();
+    println!(
+        "Part2: {nb_cheats} | {}s {}ms {}µs {}ns",
+        duration.as_secs(),
+        duration.subsec_millis(),
+        duration.subsec_micros() % 1000,
+        duration.subsec_nanos() % 1000
+    );
+
+    println!("===== UNOPTIMIZED =====");
 
     let start = Instant::now();
 
