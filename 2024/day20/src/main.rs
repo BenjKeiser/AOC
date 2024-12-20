@@ -139,6 +139,7 @@ fn get_cheats(track: &Grid, duration: usize) -> Vec<(Point, Vec<(Point, usize)>)
     cheats
 }
 
+//todo: Optimize solution -> https://www.reddit.com/r/adventofcode/comments/1hicdtb/comment/m2y3gza/
 fn main() -> Result<(), Box<dyn Error>> {
     let file_path = get_first_arg()?;
 
