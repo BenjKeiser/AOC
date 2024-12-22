@@ -65,9 +65,9 @@ impl Grid {
         pos.y == 0 || pos.y == self.len() - 1 || pos.x == 0 || pos.x == self[0].len()
     }
 
-    pub fn get_reachable(&self, pos: &Point, steps: usize) -> Vec<(Point, usize)>{
+    pub fn get_reachable(&self, pos: &Point, steps: usize) -> Vec<(Point, usize)> {
         let mut reachable: Vec<_> = Vec::new();
-        
+
         let max_range = steps as isize;
 
         // Iterate over all points in the bounding box around the circle
@@ -77,11 +77,21 @@ impl Grid {
                 let new_y = pos.y as isize + dy;
 
                 // Check grid bounds
-                if new_x >= 0 && new_y >= 0 && new_x < self[0].len() as isize && new_y < self.len() as isize {
+                if new_x >= 0
+                    && new_y >= 0
+                    && new_x < self[0].len() as isize
+                    && new_y < self.len() as isize
+                {
                     // Check if the point lies within the circle (Manhattan distance)
                     let st = (dx.abs() + dy.abs()) as usize;
                     if st <= steps {
-                        reachable.push((Point { x: new_x as usize, y: new_y as usize}, st));
+                        reachable.push((
+                            Point {
+                                x: new_x as usize,
+                                y: new_y as usize,
+                            },
+                            st,
+                        ));
                     }
                 }
             }
@@ -127,6 +137,16 @@ impl Direction {
             '^' => Some(Direction { x: 0, y: -1 }),
             '>' => Some(Direction { x: 1, y: 0 }),
             'v' => Some(Direction { x: 0, y: 1 }),
+            _ => None,
+        }
+    }
+
+    pub fn dir_to_arrow_char(self: &Self) -> Option<char> {
+        match self {
+            Direction { x: -1, y: 0 } => Some('<'),
+            Direction { x: 0, y: -1 } => Some('^'),
+            Direction { x: 1, y: 0 } => Some('>'),
+            Direction { x: 0, y: 1 } => Some('v'),
             _ => None,
         }
     }
