@@ -249,6 +249,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         codes.push((line[..3].parse::<usize>()?, line.chars().collect()));
     }
 
+    todo!("Go for recursive with memoization. track the current depth as well as the max depth");
+    todo!("if necessary ditch dijkstra and return all possible paths -> no zig zag unless required (dead space)");
+    todo!("Possibly move to Strings instead of Vec<char> but probably not feasible in rust");
+
     let start = Instant::now();
     let complexity = get_complexity(&codes, 2);
     let duration = start.elapsed();
