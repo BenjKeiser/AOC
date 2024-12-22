@@ -40,7 +40,12 @@ impl PartialOrd for Node {
 fn get_cost(d1: &char, d2: &char) -> usize {
     let p1 = get_dir_pos(d1);
     let p2 = get_dir_pos(d2);
-    ((p1.x as i32 - p2.x as i32).abs() + (p2.y as i32 - p2.x as i32).abs()) as usize
+    if p1 == p2 {
+        0
+    }
+    else {
+        1
+    }
 }
 
 //use dijkstra
@@ -68,10 +73,23 @@ fn dijkstra(pad: &Grid, start: &Point, end: &Point) -> Vec<char> {
         visited[node.pos.y][node.pos.x] = node.cost;
 
         if node.pos == *end {
-            if node.dirs.len() < best_path_cost {
-                best_path_cost = node.dirs.len();
-                shortest_dirs = node.dirs.clone();
-                shortest_dirs.push('A');
+            if let Some(d) = node.dirs.last() {
+                let mut punish = 0;
+                if *d == '<' {
+                    punish = 10;
+                }
+                if node.cost + punish < best_path_cost {
+                    best_path_cost = node.cost + punish;
+                    shortest_dirs = node.dirs.clone();
+                    shortest_dirs.push('A');
+                }
+            }
+            else {
+                if node.cost < best_path_cost {
+                    best_path_cost = node.cost ;
+                    shortest_dirs = node.dirs.clone();
+                    shortest_dirs.push('A');
+                }
             }
         }
 
@@ -184,7 +202,7 @@ fn push_button(num: &Grid, dir: &Grid, start: char, button: char) -> usize {
     let a_pos_robot = Point { x: 2, y: 0 };
 
     //moves the first robot has to perform to do the num pad push for the button
-    let mut num_dir = dijkstra(num, &start_pos, &end_pos);
+    let num_dir = dijkstra(num, &start_pos, &end_pos);
 
     println!("{:?}", num_dir);
 
