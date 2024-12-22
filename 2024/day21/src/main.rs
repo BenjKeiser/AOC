@@ -190,11 +190,9 @@ fn get_dir_kp() -> Grid {
     kp_dir
 }
 
-fn push_button(num: &Grid, dir: &Grid, start: char, button: char) -> usize {
+fn push_button(num: &Grid, dir: &Grid, start: char, button: char, robot_max: usize) -> usize {
     //Note, the robots always end on A as they need that button to execut the button
-    let mut buttons = Vec::new();
-
-    println!("{start} => {button}");
+    let mut buttons;
 
     let start_pos = get_num_pos(&start);
     let end_pos = get_num_pos(&button);
@@ -204,35 +202,26 @@ fn push_button(num: &Grid, dir: &Grid, start: char, button: char) -> usize {
     //moves the first robot has to perform to do the num pad push for the button
     let num_dir = dijkstra(num, &start_pos, &end_pos);
 
-    println!("{:?}", num_dir);
-
     //moves the second robot has to perform for the first robot to push the buttons
-    let mut s = a_pos_robot;
-    let mut dir_dir: Vec<char> = Vec::new();
-    for e in num_dir {
-        let end = get_dir_pos(&e);
-        let mut r_dirs = dijkstra(dir, &s, &end);
-        s = end;
-        dir_dir.append(&mut r_dirs);
+    let mut robot = 0;
+    buttons = num_dir;
+    while robot < robot_max {
+        let mut s = a_pos_robot;
+        let mut dir_dir: Vec<char> = Vec::new();
+        for e in buttons {
+            let end = get_dir_pos(&e);
+            let mut r_dirs = dijkstra(dir, &s, &end);
+            s = end;
+            dir_dir.append(&mut r_dirs);
+        }
+        buttons = dir_dir;
+        robot += 1;
     }
-
-    println!("{:?}", dir_dir);
-
-    //moves I have to perform for the second robot to push the buttons
-    let mut s = a_pos_robot;
-    for e in dir_dir {
-        let end = get_dir_pos(&e);
-        let mut r_dirs = dijkstra(dir, &s, &end);
-        s = end;
-        buttons.append(&mut r_dirs);
-    }
-
-    println!("{:?}", buttons);
 
     buttons.len()
 }
 
-fn get_complexity(codes: &Vec<(usize, Vec<char>)>) -> usize {
+fn get_complexity(codes: &Vec<(usize, Vec<char>)>, robots: usize) -> usize {
     let mut complexity = 0;
     let kp_num = get_num_kp();
     let kp_dir = get_dir_kp();
@@ -241,7 +230,7 @@ fn get_complexity(codes: &Vec<(usize, Vec<char>)>) -> usize {
         let mut keypresses = 0;
         let mut start = 'A';
         for c in code {
-            keypresses += push_button(&kp_num, &kp_dir, start, *c);
+            keypresses += push_button(&kp_num, &kp_dir, start, *c,robots);
             start = *c
         }
         println!("{:?} => {} * {}", code, keypresses, comp);
@@ -261,7 +250,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let start = Instant::now();
-    let complexity = get_complexity(&codes);
+    let complexity = get_complexity(&codes, 2);
     let duration = start.elapsed();
     println!(
         "Part1: {complexity} | {}s {}ms {}µs {}ns",
