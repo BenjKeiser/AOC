@@ -51,28 +51,16 @@ fn get_most_bananas(secrets: &Vec<usize>, iterations: usize) -> usize {
         let mut trade_values: Vec<usize> = Vec::new();
         let mut idxs = HashSet::new();
         trade_values.push(secret % 10);
-        //println!("{secret} => {}", (secret % 10) as u8);
         for _ in 0..iterations {
             secret = get_next_secret_nb(secret);
             trade_values.push(secret % 10);
-            //println!("{secret} => {}", (secret % 10) as u8);
         }
-        //println!("{:?}", trade_values);
         for i in 4..trade_values.len() {
             let x = ((trade_values[i - 3] as i8 - trade_values[i - 4] as i8) + 9) as usize;
             let y = ((trade_values[i - 2] as i8 - trade_values[i - 3] as i8) + 9) as usize;
             let z = ((trade_values[i - 1] as i8 - trade_values[i - 2] as i8) + 9) as usize;
             let k = ((trade_values[i] as i8 - trade_values[i - 1] as i8) + 9) as usize;
-            /*
-            println!(
-                "{}, {}, {}, {} => {}",
-                x as i8 - 9,
-                y as i8 - 9,
-                z as i8 - 9,
-                k as i8 - 9,
-                trade_values[i]
-            );
-            */
+
             let index = x * 19_usize.pow(3) + y * 19_usize.pow(2) + z * 19 + k;
             if !idxs.contains(&index) {
                 value_map[index].push(trade_values[i]);
