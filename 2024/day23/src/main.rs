@@ -13,8 +13,7 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-fn get_three_interconnects(connections: &Vec<(String, String)>, start: char) -> HashSet<Vec<String>> {
-    let mut threes: HashSet<Vec<String>> = HashSet::new();
+fn get_all_connections(connections: &Vec<(String, String)>) -> HashMap<String, Vec<String>> {
     let mut computers: HashMap<String, Vec<String>> = HashMap::new();
 
     for (first, second) in connections {
@@ -27,8 +26,14 @@ fn get_three_interconnects(connections: &Vec<(String, String)>, start: char) -> 
             .and_modify(|con| con.push(first.clone()))
             .or_insert_with(|| vec![first.clone()]);
     }
+    computers
+}
 
-    for (c1, cs) in &computers {
+fn get_three_interconnects(computers: &HashMap<String, Vec<String>>, start: char) -> HashSet<Vec<String>> {
+    let mut threes: HashSet<Vec<String>> = HashSet::new();
+
+
+    for (c1, cs) in computers {
         if !c1.starts_with(start) {
             continue;
         }
@@ -73,7 +78,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let start = Instant::now();
-    let three_interconnects = get_three_interconnects(&connections, 't');
+    let computers = get_all_connections(&connections);
+    let three_interconnects = get_three_interconnects(&computers, 't');
     let threes = three_interconnects.len();
     let duration = start.elapsed();
     println!(
