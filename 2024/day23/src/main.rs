@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
@@ -26,15 +26,20 @@ fn get_all_connections(connections: &Vec<(String, String)>) -> HashMap<String, V
             .and_modify(|con| con.push(first.clone()))
             .or_insert_with(|| vec![first.clone()]);
     }
+
+    computers.iter_mut().for_each(|(_k, v)| v.sort());
+
     computers
 }
 
-fn get_three_interconnects(computers: &HashMap<String, Vec<String>>, start: char) -> HashSet<Vec<String>> {
+fn get_three_interconnects(
+    computers: &HashMap<String, Vec<String>>,
+    start: char,
+) -> HashSet<Vec<String>> {
     let mut threes: HashSet<Vec<String>> = HashSet::new();
 
-
     for (c1, cs) in computers {
-        if !c1.starts_with(start) {
+        if start != '0' && !c1.starts_with(start) {
             continue;
         }
         for k in 0..cs.len() - 1 {
@@ -60,6 +65,67 @@ fn get_three_interconnects(computers: &HashMap<String, Vec<String>>, start: char
     }
 
     threes
+}
+
+fn get_largest_group(
+    computers: &HashMap<String, Vec<String>>,
+    all: &Vec<String>,
+    groups: &HashSet<Vec<String>>,
+) -> Vec<String> {
+    let mut largest_group = Vec::new();
+    let mut new_groups: HashSet<Vec<String>> = HashSet::new();
+
+    for group in groups {
+        for comp in all {
+            if !group.contains(comp) {
+                let mut add: bool = true;
+                if let Some(c1) = computers.get(comp) {
+                    for c in group {
+                        if let Some(c2) = computers.get(c) {
+                            if !c1.contains(c) || !c2.contains(comp) {
+                                add = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if add {
+                    let mut new_group = group.clone();
+                    new_group.push(comp.to_string());
+                    new_group.sort();
+                    new_groups.insert(new_group);
+                }
+            }
+        }
+    }
+
+    let max_len = new_groups.iter().map(|vec| vec.len()).max().unwrap_or(0);
+    let filtered_set: HashSet<Vec<String>> = new_groups
+        .into_iter()
+        .filter(|vec| vec.len() == max_len)
+        .collect();
+
+    if filtered_set.len() > 1 {
+        largest_group = get_largest_group(computers, all, &filtered_set);
+    } else {
+        if let Some(l) = filtered_set.iter().next() {
+            largest_group = l.clone();
+        }
+    }
+
+    largest_group
+}
+
+fn get_longest_interconnect(computers: &HashMap<String, Vec<String>>) -> Vec<String> {
+    let threes = get_three_interconnects(computers, '0');
+
+    let all_computers: Vec<String> = computers.keys().cloned().collect();
+
+    let interconnect = get_largest_group(computers, &all_computers, &threes);
+
+    println!("{:?}", interconnect);
+
+    interconnect
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -91,10 +157,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let start = Instant::now();
-    let bananas = 0;
+    let longest_interconnect = get_longest_interconnect(&computers);
+    let mut result: String = String::from("NO OUTPUT");
+    if let Some(r)= longest_interconnect.first() {
+        result = r.to_string();
+        for c in longest_interconnect.iter().skip(1) {
+            result = result + ",";
+            result.push_str(c);
+        }
+
+    }
     let duration = start.elapsed();
+
     println!(
-        "Part2: {2} | {}s {}ms {}µs {}ns",
+        "Part2: {} | {}s {}ms {}µs {}ns",
+        result,
         duration.as_secs(),
         duration.subsec_millis(),
         duration.subsec_micros() % 1000,
