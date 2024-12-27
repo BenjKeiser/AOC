@@ -101,6 +101,52 @@ fn get_z(values: &mut BTreeMap<String, u8>, equations: &Vec<(String, Equation)>)
     z
 }
 
+fn get_switched(values: &BTreeMap<String, u8>, equations: &Vec<(String, Equation)>) -> Vec<String> {
+    let mut switched = Vec::new();
+    let mut x = 0;
+    let mut y = 0;
+    let mut z = 0;
+
+    let mut max_len = 0;
+
+    for (idx, (_k, v)) in values.iter().filter(|(k, _)| k.starts_with('x')).enumerate(){
+        x += (*v as usize) << idx;
+     }
+
+     for (idx, (_k, v)) in values.iter().filter(|(k, _)| k.starts_with('y')).enumerate(){
+        y += (*v as usize) << idx;
+     }
+
+     for (idx, (_k, v)) in values.iter().filter(|(k, _)| k.starts_with('z')).enumerate(){
+        z += (*v as usize) << idx;
+        max_len = idx;
+     }
+
+     //let x_y = x & y; // <- test_input_p2
+     let x_y = x + y; // <- real system
+
+     println!("x:       {}", x);
+     println!("y:       {}", y);
+     println!("x + y:   {}", x_y);
+     println!("z:       {}", z);
+     println!("diff:    {}", x_y ^ z);
+
+     for i in 0..=max_len {
+        if (((x_y ^ z) >> i) & 1) == 1 {
+            let mismatch = format!("z{:02}", i);
+            if ((z >> i) & 1) == 1 {
+                println!("z is 1, should be 0");
+            } 
+            else {
+                println!("z is 0, should be 1");
+            }
+            println!("mismatch {mismatch}");
+        }
+     }
+
+     switched
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let file_path = get_first_arg()?;
 
@@ -142,6 +188,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let start = Instant::now();
+
+    let _switched = get_switched(&values, &equations);
 
     let duration = start.elapsed();
 
