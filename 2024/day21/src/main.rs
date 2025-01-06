@@ -1,6 +1,6 @@
 use grid::{Direction, Grid, Point};
 use std::cmp::Ordering;
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashMap};
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
@@ -190,35 +190,52 @@ fn get_dir_kp() -> Grid {
     kp_dir
 }
 
-fn push_button(num: &Grid, dir: &Grid, start: char, button: char, robot_max: usize) -> usize {
-    //Note, the robots always end on A as they need that button to execut the button
-    let mut buttons;
+fn move_robot(dir: &Grid, moves: &[char], robot: usize, robot_max: usize, move_map: &mut HashMap<(Point, Point), Vec<char>>, count_map: &mut HashMap<(Vec<char>, usize), usize>) -> usize {
+    if robot == robot_max {
+        return moves.len();
+    }
+    else {
+        let mut move_count = 0;
+        let a_pos_robot = Point { x: 2, y: 0 };
+    
+        let mut s = a_pos_robot;
+        for e in moves {
+            let r_dirs;
+            let end = get_dir_pos(&e);
+            if let Some(dirs) = move_map.get(&(s, end)) {
+                r_dirs = dirs.clone();
+            }
+            else {
+                r_dirs = dijkstra(dir, &s, &end);
+                move_map.insert((s, end), r_dirs.clone());
+            }
+            s = end;
+            if let Some(count) = count_map.get(&(r_dirs.clone(), robot+1)) {
+                move_count += count;
+            }
+            else {
+                let c = move_robot(dir, &r_dirs, robot+1, robot_max, move_map, count_map);
+                count_map.insert((r_dirs.clone(), robot+1), c);
+                move_count += c;
+            }
+        }
+        return move_count;
+    }
+}
 
+fn push_button(num: &Grid, dir: &Grid, start: char, button: char, robot_max: usize) -> usize {
+    let mut move_map: HashMap<(Point, Point), Vec<char>> = HashMap::new();
+    let mut count_map: HashMap<(Vec<char>, usize), usize> = HashMap::new();
+
+    //Note, the robots always end on A as they need that button to execute the button push
     let start_pos = get_num_pos(&start);
     let end_pos = get_num_pos(&button);
-
-    let a_pos_robot = Point { x: 2, y: 0 };
 
     //moves the first robot has to perform to do the num pad push for the button
     let num_dir = dijkstra(num, &start_pos, &end_pos);
 
-    //moves the second robot has to perform for the first robot to push the buttons
-    let mut robot = 0;
-    buttons = num_dir;
-    while robot < robot_max {
-        let mut s = a_pos_robot;
-        let mut dir_dir: Vec<char> = Vec::new();
-        for e in buttons {
-            let end = get_dir_pos(&e);
-            let mut r_dirs = dijkstra(dir, &s, &end);
-            s = end;
-            dir_dir.append(&mut r_dirs);
-        }
-        buttons = dir_dir;
-        robot += 1;
-    }
-
-    buttons.len()
+    //moves the other robots have to perform
+    move_robot(dir, &num_dir, 0, robot_max, &mut move_map, &mut count_map)
 }
 
 fn get_complexity(codes: &Vec<(usize, Vec<char>)>, robots: usize) -> usize {
@@ -249,9 +266,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         codes.push((line[..3].parse::<usize>()?, line.chars().collect()));
     }
 
-    todo!("Go for recursive with memoization. track the current depth as well as the max depth");
     todo!("if necessary ditch dijkstra and return all possible paths -> no zig zag unless required (dead space)");
-    todo!("Possibly move to Strings instead of Vec<char> but probably not feasible in rust");
 
     let start = Instant::now();
     let complexity = get_complexity(&codes, 2);
@@ -265,10 +280,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let start = Instant::now();
-    let bananas = 0;
+    let complexity = get_complexity(&codes, 25);
     let duration = start.elapsed();
     println!(
-        "Part2: {bananas} | {}s {}ms {}µs {}ns",
+        "Part2: {complexity} | {}s {}ms {}µs {}ns",
         duration.as_secs(),
         duration.subsec_millis(),
         duration.subsec_micros() % 1000,
