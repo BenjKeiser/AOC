@@ -49,14 +49,16 @@ fn get_cost(d1: &char, d2: &char) -> usize {
 }
 
 //use dijkstra
-fn dijkstra(pad: &Grid, start: &Point, end: &Point) -> Vec<char> {
+fn dijkstra(pad: &Grid, start: &Point, end: &Point) -> Vec<Vec<char>> {
     let mut visited: Vec<Vec<usize>> = vec![vec![MAX; pad[0].len()]; pad.len()];
 
     let mut heap: BinaryHeap<Node> = BinaryHeap::new();
 
     let mut best_path_cost = MAX;
 
-    let mut shortest_dirs: Vec<char> = Vec::new();
+    let mut best_dirs = Vec::new();
+
+    let mut best_switches = MAX;
 
     //push start element
     heap.push(Node {
@@ -73,23 +75,22 @@ fn dijkstra(pad: &Grid, start: &Point, end: &Point) -> Vec<char> {
         visited[node.pos.y][node.pos.x] = node.cost;
 
         if node.pos == *end {
-            if let Some(d) = node.dirs.last() {
-                let mut punish = 0;
-                if *d == '<' {
-                    punish = 10;
-                }
-                if node.cost + punish < best_path_cost {
-                    best_path_cost = node.cost + punish;
-                    shortest_dirs = node.dirs.clone();
-                    shortest_dirs.push('A');
+            let mut current_switches = 0;
+            if let Some(mut c) = node.dirs.first() {
+                for n_c in node.dirs.iter().skip(1) {
+                    if c != n_c {
+                        current_switches += 1;
+                    }
+                    c = n_c;
                 }
             }
-            else {
-                if node.cost < best_path_cost {
-                    best_path_cost = node.cost ;
-                    shortest_dirs = node.dirs.clone();
-                    shortest_dirs.push('A');
-                }
+
+            if node.cost <= best_path_cost && current_switches <= best_switches {
+                best_path_cost = node.cost;
+                best_switches = current_switches;
+                let mut shortest_dirs = node.dirs.clone();
+                shortest_dirs.push('A');
+                best_dirs.push(shortest_dirs);
             }
         }
 
@@ -122,7 +123,7 @@ fn dijkstra(pad: &Grid, start: &Point, end: &Point) -> Vec<char> {
         }
     }
 
-    shortest_dirs
+    best_dirs
 }
 
 fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
@@ -190,7 +191,7 @@ fn get_dir_kp() -> Grid {
     kp_dir
 }
 
-fn move_robot(dir: &Grid, moves: &[char], robot: usize, robot_max: usize, move_map: &mut HashMap<(Point, Point), Vec<char>>, count_map: &mut HashMap<(Vec<char>, usize), usize>) -> usize {
+fn move_robot(dir: &Grid, moves: &[char], robot: usize, robot_max: usize, move_map: &mut HashMap<(Point, Point), Vec<Vec<char>>>, count_map: &mut HashMap<(Vec<char>, usize), usize>) -> usize {
     if robot == robot_max {
         return moves.len();
     }
@@ -210,22 +211,35 @@ fn move_robot(dir: &Grid, moves: &[char], robot: usize, robot_max: usize, move_m
                 move_map.insert((s, end), r_dirs.clone());
             }
             s = end;
-            if let Some(count) = count_map.get(&(r_dirs.clone(), robot+1)) {
-                move_count += count;
+
+            let mut min_count = MAX;
+
+            for p in r_dirs {
+                if let Some(count) = count_map.get(&(p.clone(), robot+1)) {
+                    if *count < min_count {
+                        min_count = *count;
+                    }
+                }
+                else {
+                    let c = move_robot(dir, &p, robot+1, robot_max, move_map, count_map);
+                    count_map.insert((p.clone(), robot+1), c);
+                    if c < min_count {
+                        min_count = c;
+                    }
+                }
+
             }
-            else {
-                let c = move_robot(dir, &r_dirs, robot+1, robot_max, move_map, count_map);
-                count_map.insert((r_dirs.clone(), robot+1), c);
-                move_count += c;
-            }
+            move_count += min_count;
         }
         return move_count;
     }
 }
 
 fn push_button(num: &Grid, dir: &Grid, start: char, button: char, robot_max: usize) -> usize {
-    let mut move_map: HashMap<(Point, Point), Vec<char>> = HashMap::new();
+    let mut move_map: HashMap<(Point, Point), Vec<Vec<char>>> = HashMap::new();
     let mut count_map: HashMap<(Vec<char>, usize), usize> = HashMap::new();
+
+    let mut min_count = MAX;
 
     //Note, the robots always end on A as they need that button to execute the button push
     let start_pos = get_num_pos(&start);
@@ -235,7 +249,14 @@ fn push_button(num: &Grid, dir: &Grid, start: char, button: char, robot_max: usi
     let num_dir = dijkstra(num, &start_pos, &end_pos);
 
     //moves the other robots have to perform
-    move_robot(dir, &num_dir, 0, robot_max, &mut move_map, &mut count_map)
+    for p in num_dir {        
+        let count = move_robot(dir, &p, 0, robot_max, &mut move_map, &mut count_map);
+        if count < min_count {
+            min_count = count;
+        }
+    }
+    
+    min_count
 }
 
 fn get_complexity(codes: &Vec<(usize, Vec<char>)>, robots: usize) -> usize {
@@ -266,7 +287,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         codes.push((line[..3].parse::<usize>()?, line.chars().collect()));
     }
 
-    todo!("if necessary ditch dijkstra and return all possible paths -> no zig zag unless required (dead space)");
+    //todo!("if necessary ditch dijkstra and return all possible paths -> no zig zag unless required (dead space)");
 
     let start = Instant::now();
     let complexity = get_complexity(&codes, 2);
