@@ -1,0 +1,11 @@
+{
+	"name": "Codespaces Rust AoC",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                    "rust-lang.rust-analyzer"
+            ]
+        }
+    },	
+	"build": { "dockerfile": "Dockerfile" }
+}
