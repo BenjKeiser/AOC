@@ -20,3 +20,5 @@ rustup component add clippy
 
 cargo install cargo-expand
 cargo install cargo-edit
+
+echo "PS1='\\[\\033[1;32m\\]\\u@\\h \\[\\033[1;34m\\]\\w\\[\\033[0m\\]\\$ '" >> $HOME/.bashrc
