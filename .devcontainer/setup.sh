@@ -13,6 +13,7 @@ apt-get install -y \
 
 ## Install rustup and common components
 curl https://sh.rustup.rs -sSf | sh -s -- -y 
+export PATH="$HOME/.cargo/bin:$PATH"
 rustup install stable
 rustup component add rustfmt
 rustup component add clippy 
