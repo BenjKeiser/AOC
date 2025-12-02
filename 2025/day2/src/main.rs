@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::ffi::OsString;
 use std::{env, fs};
+use std::collections::HashSet;
 
 fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     match env::args_os().nth(1) {
@@ -24,50 +25,62 @@ fn count_digits(mut n: u64) -> u32 {
     count
 }
 
-fn split_by_digits(n: u64, digits: u32) -> (u64, u64) {
-    let base = 10u64.pow(digits);
+fn split_by_digits(n: u64, digits: u32, factor: u32) -> (u64, u64) {
+    let base = 10u64.pow(digits - digits/factor);
     (n / base, n % base)
 }
 
 // returns the sum of the invalid IDs
-fn check_range(start: &str, end: &str) -> Result<u64, Box<dyn Error>> {
+fn check_range(start: &str, end: &str, factor: u32, results: &mut HashSet<u64>) -> Result<u64, Box<dyn Error>> {
     let mut sum = 0;
 
     let min = start.parse::<u64>()?;
 
     let max = end.parse::<u64>()?;
 
-    println!("Range: {} - {}", min, max);
+    //println!("Range: {} - {}: {}", min, max, factor);
 
     let mut current = min;
     let mut cur_digits;
 
-    loop {
+    while current < max{
         cur_digits = count_digits(current);
         //digits must be even
-        if (cur_digits % 2) != 0 {
+        if (cur_digits % factor) != 0 {
             current = 10u64.pow(cur_digits as u32);
             continue;
         }
 
-        let (left, right) = split_by_digits(current, cur_digits / 2);
+        let (pattern, _rest) = split_by_digits(current, cur_digits, factor);
+        //println!("Current {}, Left {}, Right {}", current, pattern, rest);
+        let base = 10u64.pow(cur_digits - cur_digits/factor);
 
-        let invalid = left * 10u64.pow(cur_digits / 2) + left;
-        println!("Check: {}", invalid);
+        let mut invalid = 0;
+        for i in 1..=factor {
+            invalid += pattern * 10u64.pow((i - 1) * cur_digits/factor );
+        }
 
         if (invalid >= min) && (invalid <= max) {
             sum += invalid as u64;
-            println!("Invalid: {}", invalid);
+            results.insert(invalid);
+            //println!("Invalid: {}", invalid);
         }
 
-        current = (left) * 10u64.pow(cur_digits / 2) + 10u64.pow(cur_digits / 2);
-        println!("Next: {}", current);
-        if current > max {
-            break;
-        }
+        current = (pattern) * base + base;        
     }
 
     return Ok(sum);
+}
+
+// returns the sum of the invalid IDs
+fn check_all_factors(start: &str, end: &str, results: &mut HashSet<u64>) -> Result<(), Box<dyn Error>> {
+    let max_cnt = end.chars().count();
+
+    for i in 2..=max_cnt {
+        let _ = check_range(start, end, i as u32, results)?;
+    }
+
+    return Ok(());
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -90,12 +103,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     //println!("{:?}", ranges);
 
+    let mut results: HashSet<u64> = HashSet::new();
+
     let sum_invalid: u64 = ranges
         .iter()
-        .filter_map(|(start, end)| check_range(start, end).ok())
+        .filter_map(|(start, end)| check_range(start, end, 2, &mut results).ok())
         .sum();
 
     println!("Part1: {}", sum_invalid);
+
+    let mut results: HashSet<u64> = HashSet::new();
+    let _ = ranges
+        .iter()
+        .try_for_each(|(start, end)| check_all_factors(start, end, &mut results).ok());
+
+    let sum: u64 = results.iter().sum();
+    println!("Part2: {}", sum);
 
     Ok(())
 }
