@@ -2,6 +2,7 @@ use std::error::Error;
 use std::ffi::OsString;
 use std::{env, fs};
 use std::collections::HashSet;
+use std::time::Instant;
 
 fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     match env::args_os().nth(1) {
@@ -105,20 +106,25 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut results: HashSet<u64> = HashSet::new();
 
+    let start = Instant::now();
     let sum_invalid: u64 = ranges
         .iter()
         .filter_map(|(start, end)| check_range(start, end, 2, &mut results).ok())
         .sum();
 
-    println!("Part1: {}", sum_invalid);
+    let duration = start.elapsed();
+    println!("Part1: {} | {}s {}ms {}µs {}ns", sum_invalid, duration.as_secs(), duration.subsec_millis(), duration.subsec_micros() % 1000, duration.subsec_nanos() % 1000);
 
+
+    let start = Instant::now();
     let mut results: HashSet<u64> = HashSet::new();
     let _ = ranges
         .iter()
         .try_for_each(|(start, end)| check_all_factors(start, end, &mut results).ok());
 
     let sum: u64 = results.iter().sum();
-    println!("Part2: {}", sum);
+    let duration = start.elapsed();
+    println!("Part2: {} | {}s {}ms {}µs {}ns", sum, duration.as_secs(), duration.subsec_millis(), duration.subsec_micros() % 1000, duration.subsec_nanos() % 1000);
 
     Ok(())
 }
