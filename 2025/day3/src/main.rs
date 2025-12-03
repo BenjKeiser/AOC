@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let duration = start.elapsed();
     println!(
-        "Part1: {} | {}s {}ms {}µs {}ns",
+        "Part2: {} | {}s {}ms {}µs {}ns",
         total_joltage,
         duration.as_secs(),
         duration.subsec_millis(),
