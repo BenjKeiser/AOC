@@ -99,6 +99,77 @@ fn connect_boxes(jbox: &Vec<JBox>, nb_conn: usize) -> u64 {
     res
 }
 
+fn connect_all(jbox: &Vec<JBox>) -> u64 {
+    let mut heap: BinaryHeap<Reverse<(u64, usize, usize)>> = BinaryHeap::new();
+
+    let cable;
+
+    for i in 0..jbox.len() - 1 {
+        for j in i + 1..jbox.len() {
+            let distance = jbox[i].distance_squared(&jbox[j]);
+            heap.push(Reverse((distance, i, j)));
+        }
+    }
+
+
+    let mut circuits: Vec<HashSet<usize>> = (0..jbox.len()).map(|x| HashSet::from([x])).collect();
+
+    loop {
+        if let Some(Reverse((_d, i, j))) = heap.pop() {
+            let is: Vec<usize> = circuits
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, v)| if v.contains(&i) { Some(idx) } else { None })
+                .collect();
+            let js: Vec<usize> = circuits
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, v)| if v.contains(&j) { Some(idx) } else { None })
+                .collect();
+
+            if is.len() > 1 || js.len() > 1 {
+                println!("Something didn't work");
+            } else if is.len() == 1 && js.len() == 1 {
+                let idx_i = is[0];
+                let idx_j = js[0];
+                if idx_i == idx_j {
+                    //nothing to do, the connection is already there
+                    continue;
+                } else {
+                    //connection between two circuits, we have to merge them
+                    
+                    let bs = circuits[idx_j].clone();
+
+                    for b in bs {
+                        circuits[idx_i].insert(b);
+                    }
+                    circuits.remove(idx_j);
+
+                    //check if we reached the goal
+                    if circuits.len() == 1 {
+                        cable = jbox[i].x * jbox[j].x;
+                        break;
+                    }
+                }
+            } else if is.len() == 1 {
+                let idx_i = is[0];
+                circuits[idx_i].insert(j);
+            } else if js.len() == 1 {
+                let idx_j = js[0];
+                circuits[idx_j].insert(i);
+            } else {
+                //neither index is found, new circuit
+                let new_circuit = HashSet::from([i, j]);
+                circuits.push(new_circuit);
+            }
+        }
+    }
+
+    circuits.sort_by_key(|v| Reverse(v.len()));
+
+    cable
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let file_path = get_first_arg()?;
 
@@ -130,7 +201,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let start = Instant::now();
 
-    let circuits = connect_boxes(&junction_boxes, 1000);
+    let circuits = connect_boxes(&junction_boxes, 10);
 
     let duration = start.elapsed();
     println!(
@@ -144,10 +215,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let start = Instant::now();
 
+    let circuits = connect_all(&junction_boxes);
+
     let duration = start.elapsed();
     println!(
         "Part2: {} | {}s {}ms {}µs {}ns",
-        2,
+        circuits,
         duration.as_secs(),
         duration.subsec_millis(),
         duration.subsec_micros() % 1000,
