@@ -11,14 +11,11 @@ fn get_first_arg() -> Result<OsString, Box<dyn Error>> {
     }
 }
 
-fn get_paths(devices: &HashMap<String, Vec<String>>) -> u64 {
+fn get_paths(target: &String, start: &String, devices: &HashMap<String, Vec<String>>) -> u64 {
     let visited: HashSet<String> = HashSet::new();
-    explore_paths(
-        &"out".to_string(),
-        &"you".to_string(),
-        &visited,
-        devices,
-    )
+
+    let mut memo: HashMap<(String, String), u64> = HashMap::new();
+    explore_paths(target, start, &visited, devices, &mut memo)
 }
 
 fn explore_paths(
@@ -26,6 +23,7 @@ fn explore_paths(
     node: &String,
     visited: &HashSet<String>,
     map: &HashMap<String, Vec<String>>,
+    memo: &mut HashMap<(String, String), u64>,
 ) -> u64 {
     let mut paths = 0;
     if !visited.contains(node) {
@@ -39,7 +37,13 @@ fn explore_paths(
         // insert next
         if let Some(next) = map.get(node) {
             for n in next {
-                paths += explore_paths(target, n, &v, map)
+                if let Some(v) = memo.get(&(n.clone(), target.clone())) {
+                    paths += *v;
+                } else {
+                    let p = explore_paths(target, n, &v, map, memo);
+                    memo.insert((n.clone(), target.clone()), p);
+                    paths += p;
+                }
             }
         }
     }
@@ -77,7 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let start = Instant::now();
 
-    let paths = get_paths(&devices);
+    let paths = get_paths(&"out".to_string(), &"you".to_string(), &devices);
 
     let duration = start.elapsed();
     println!(
@@ -90,11 +94,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let start = Instant::now();
+    
+    let mut paths1 = get_paths(&"dac".to_string(), &"svr".to_string(), &devices);
+    paths1 *= get_paths(&"fft".to_string(), &"dac".to_string(), &devices);
+    paths1 *= get_paths(&"out".to_string(), &"fft".to_string(), &devices);
+
+    
+    let mut paths2 = get_paths(&"fft".to_string(), &"svr".to_string(), &devices);
+    paths2 *= get_paths(&"dac".to_string(), &"fft".to_string(), &devices);
+    paths2 *= get_paths(&"out".to_string(), &"dac".to_string(), &devices);
+
+    let paths = paths1 + paths2;
 
     let duration = start.elapsed();
     println!(
         "Part2: {} | {}s {}ms {}µs {}ns",
-        2,
+        paths,
         duration.as_secs(),
         duration.subsec_millis(),
         duration.subsec_micros() % 1000,
