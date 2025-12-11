@@ -104,13 +104,14 @@ fn minimal_integer_solution(
     let mut vars = variables!();
     let mut xs = Vec::with_capacity(m);
 
-    // Create binary variables x_j ∈ {0,1}
+    // Create integer variables x_j
     for _ in 0..m {
-        xs.push(vars.add(variable().binary()));
+        xs.push(vars.add(variable().integer().min(0)));
     }
 
     // Build model: no objective → just find feasible solution
-    let mut model = vars.maximise(0).using(default_solver);
+    let objective: Expression = xs.iter().copied().sum();
+    let mut model = vars.minimise(objective).using(default_solver);
 
     // Add constraints: A[i] * x = b[i]
     for i in 0..n {
@@ -131,7 +132,7 @@ fn minimal_integer_solution(
     // Extract solution as i32 vector of 0/1
     let mut x = vec![0i32; m];
     for j in 0..m {
-        x[j] = if solution.value(xs[j]) > 0.5 { 1 } else { 0 };
+        x[j] = solution.value(xs[j]) as i32;
     }
 
     Some(x)
@@ -154,7 +155,9 @@ fn get_joltage(machine: &Machine) -> u64 {
 
 
     if let Some(x) = minimal_integer_solution(&matrix, &results) {
-        println!("{:?}", x);
+        let buttons: i32 = x.iter().sum();
+        //println!("{:?} => {}", x, buttons);
+        return buttons as u64
     }
 
     0
